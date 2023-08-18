@@ -47,10 +47,12 @@ Brief description of input arguments via help message:
 The following is a more detailed description of input arguments:
 
 - Required arguments:
+|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | --input [-i]:   | Directory containing a folder for each sample. Samples can be single or paired-end, but paired-end sequences need to contain '_R1' and '_R2' within the file names to determine forward and reverse reads. If starting from a step in the pipeline after alignment the input files are not required to contain '_R1' or '_R2'. |
 | --genome [-g]:  | Directory containing genome files for the organism of interest. A '.fasta' file should be present in the directory so that any additional required genome files can be automatically created if missing. All genome files should have the same basename. |
 
 - Optional arguments:
+|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | --output [-o]:  | Output directory. If no output is given, the output files will be saved to the input folders. |
 | --step [-s]:    | Desired step at which to start the pipeline. If no step is entered, the entire pipeline will be run. |
 | --quality [-q]: | Integer indicating Phred quality score for trimming low-quality bases at the ends of reads during read pairing and for removing low-quality reads during filtering. Phred score will also be used to approximate filtering settings during alignment. |
