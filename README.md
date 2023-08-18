@@ -21,7 +21,7 @@ Put all input files in a single directory with one folder per sample. The sequen
 
 ## What do I need to run the pipeline?
 
-Although the ChIPpipe script does automatically download/install most necessary software/tools, depending on your system you may need to install some things manually. Here is a list of all of the necessary tools to run the complete pipeline:
+Although the ChIPpipe script does automatically download most of the necessary software/tools, depending on your system you may need to install some things manually. Here is a list of all the necessary tools to run the complete pipeline:
 
 - python3/pip3
 - R
@@ -32,7 +32,7 @@ Although the ChIPpipe script does automatically download/install most necessary 
 - samtools
 - macs2
 
-The only software that requires manual installation is **trimmomatic** due to compatibility issues with the java version specified in the BUILD.xml file in the Trimmomatic repo.
+The only software that requires manual installation is **trimmomatic** due to compatibility issues with the java version specified in the build.xml file in the Trimmomatic repo.
 
 ## How do I use it?
 
