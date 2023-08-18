@@ -50,7 +50,8 @@ for arg in "$@"; do
     esac
 done
 
-SCRIPTS=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+pipedir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+SCRIPTS="$pipedir"/scripts
 
 while getopts ":i:g:o:s:q:t:r:h:" opt; do
     case $opt in
