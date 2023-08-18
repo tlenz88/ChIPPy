@@ -48,7 +48,7 @@ The following is a more detailed description of input arguments:
 
 - Required arguments:\
     --input: Directory containing a folder for each sample. Samples can be single or paired-end, but paired-end sequences need to contain '_R1' and '_R2' within the file names to determine forward and reverse reads. If starting from a step in the pipeline after alignment the input files are not required to contain '_R1' or '_R2'.\
-    --genome: Directory containing genome files for the organism of interest. A '.fasta' file should be present in the directory so that any additional required genome files can be automatically created if missing. All genome files should have the same basename.\
+    --genome: Directory containing genome files for the organism of interest. A '.fasta' file should be present in the directory so that any additional required genome files can be automatically created if missing. All genome files should have the same basename.
 
 - Optional arguments:\
     --output: Output directory. If no output is given, the output files will be saved to the input folders.\
