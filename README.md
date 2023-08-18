@@ -20,18 +20,20 @@ Put all input files in a single directory with one folder per sample. The sequen
             ++ sample4.fastq.gz
 ```
 
-## What do I need to run the pipeline?
+## What tools do I need to run the pipeline?
 
-Although the ChIPpipe script automatically downloads most of the necessary software/tools, depending on your system you may need to install some things manually. The only software that requires manual installation is **trimmomatic** due to compatibility issues with the java version specified in the build.xml file in the Trimmomatic repo. Here is a list of all the necessary tools to run the complete pipeline:
+Although the ChIPpipe script automatically downloads most of the necessary software/tools, depending on your system you may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
 
-- python3/pip3
+- Python3/pip3
 - R
 - fastqc
-- trimmomatic
-- bowtie2
-- picardtools
-- samtools
-- macs2
+- Trimmomatic
+- Bowtie2
+- Picardtools
+- Samtools
+- MACS2
+
+Any version of Python3 and R are acceptable, but it is recommended that you use upgrade to the latest versions.
 
 ## What else do I need?
 
@@ -47,25 +49,27 @@ Brief description of input arguments via help message:
     ChIPpipe.sh --help
     usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r]
 
-    -------------------------------------------------------------
+    ----------------------------------------------------------------
     Required inputs:
-     -i|--input  INPUT    : Input data folder.
-     -g|--genome GENOME   : Path to genome files.
+     -i|--input  INPUT         : Input data folder.
+     -g|--genome GENOME        : Path to genome files.
 
     Optional inputs:
-     -o|--output OUTPUT   : Output folder.
-     -s|--step  STEP      : Choose starting step.
-            quality_check : Initial quality check.
-                 trimming : Adapter trimming.
-                alignment : Read alignment.
-            deduplication : Remove PCR duplicates.
-                filtering : Filtering low-quality reads.
-                  sorting : Sorting reads by coordinate.
-                  mapping : Mapping reads to each base pair
-     -q|--quality QUALITY : Phred quality score for filtering.
-     -t|--threads THREADS : Processor threads.
-     -r|--remove REMOVE   : Remove intermediate files.
-    -------------------------------------------------------------
+     -o|--output OUTPUT        : Output folder.
+     -s|--step  STEP           : Choose starting step.
+            quality_check      : Initial quality check.
+                 trimming      : Adapter trimming.
+                alignment      : Read alignment.
+            deduplication      : Remove PCR duplicates.
+                filtering      : Filtering low-quality reads.
+                  sorting      : Sorting reads by coordinate.
+                  mapping      : Mapping reads to each base pair
+     -q|--quality QUALITY      : Phred quality score for filtering.
+     -a1|--antibody1 ANTIBODY1 : Target antibody.
+     -a2|--antibody2 ANTIBODY2 : Control antibody (IGG) or input.
+     -t|--threads THREADS      : Processor threads.
+     -r|--remove REMOVE        : Remove intermediate files.
+    ----------------------------------------------------------------
 ```
 
 The following is a more detailed description of input arguments:
@@ -84,6 +88,10 @@ The following is a more detailed description of input arguments:
 
     --quality [-q]: Integer indicating Phred quality score for trimming low-quality bases at the ends of reads during read pairing and for removing low-quality reads during filtering. Phred score will also be used to approximate filtering settings during alignment.
 
+    --antibody1 [-a1]: Name or value indicating the targeted antibody in your experiment. This value is used to differentiate the targeted samples from the control samples, therefore the argument should be a string in the filenames. e.g. <-a1 H3K9me3> would indicate that all samples with 'H3K9me3' as part of their filename are the targeted samples. However, the input does not have to be valid antibody, but can be any string that is used within your sample names to indicate your targeted samples.
+
+    --antibody2 [-a2]: Name or value indicating the control or input samples in your experiment. Like <antibody1>, this value is used to differentiate the control samples from the targeted samples, therefore the argument should be a string in the filenames. e.g. <-a2 IGG> would indicate that all samples with 'IGG' as part of their filename are control samples. This can also be any string that is used within your sample names, but will be used to indicate your control samples.
+
     --threads [-t]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on your system.
 
     --remove [-r]: Removes intermediate files when no longer needed by pipeline to save hard drive space.
@@ -96,11 +104,11 @@ The following is a more detailed description of input arguments:
 
 - **Trimming**:
 
-    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality \[-q\]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit your specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using Paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
+    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality [-q]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit your specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using Paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
 
 - **Alignment**:
 
-    The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the '.fasta' file provided by the 'genome \[-g\]' argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive option is used to specify a high-sensitivity mode. A single SAM file is output for each aligned sample. See [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
+    The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the '.fasta' file provided by the 'genome [-g]' argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive option is used to specify a high-sensitivity mode. A single SAM file is output for each aligned sample. See [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
 
 - **Deduplication**:
 

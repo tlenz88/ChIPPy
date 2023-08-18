@@ -10,25 +10,27 @@ function help {
     echo "ChIPpipe.sh --help"
     echo "usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r]"
     echo
-    echo "-------------------------------------------------------------"
+    echo "----------------------------------------------------------------"
     echo "Required inputs:"
-    echo "  -i|--input  INPUT    : Input data folder."
-    echo "  -g|--genome GENOME   : Path to genome files."
+    echo "  -i|--input  INPUT        : Input data folder."
+    echo "  -g|--genome GENOME       : Path to genome files."
     echo
     echo "Optional inputs:"
-    echo "  -o|--output OUTPUT   : Output folder."
-    echo "  -s|--step  STEP      : Choose starting step."
-    echo "         quality_check : Initial quality check."
-    echo "              trimming : Adapter trimming."
-    echo "             alignment : Read alignment."
-    echo "         deduplication : Remove PCR duplicates."
-    echo "             filtering : Filtering low-quality reads."
-    echo "               sorting : Sorting reads by coordinate."
-    echo "               mapping : Mapping reads to each base pair"
-    echo "  -q|--quality QUALITY : Phred quality score for filtering."
-    echo "  -t|--threads THREADS : Processor threads."
-    echo "  -r|--remove REMOVE   : Remove intermediate files."
-    echo "-------------------------------------------------------------"
+    echo "  -o|--output OUTPUT       : Output folder."
+    echo "  -s|--step  STEP          : Choose starting step."
+    echo "         quality_check     : Initial quality check."
+    echo "              trimming     : Adapter trimming."
+    echo "             alignment     : Read alignment."
+    echo "         deduplication     : Remove PCR duplicates."
+    echo "             filtering     : Filtering low-quality reads."
+    echo "               sorting     : Sorting reads by coordinate."
+    echo "               mapping     : Mapping reads to each base pair"
+    echo "  -q|--quality QUALITY     : Phred quality score for filtering."
+    echo " -a1|--antibody1 ANTIBODY1 : Target antibody."
+    echo " -a2|--antibody2 ANTIBODY2 : Control antibody (IGG) or input."
+    echo "  -t|--threads THREADS     : Processor threads."
+    echo "  -r|--remove REMOVE       : Remove intermediate files."
+    echo "----------------------------------------------------------------"
     exit 0;
 }
 
@@ -43,6 +45,8 @@ for arg in "$@"; do
         "--output") set -- "$@" "-o" ;;
         "--step") set -- "$@" "-s" ;;
         "--quality") set -- "$@" "-q" ;;
+        "--antibody1") set -- "$@" "-a1" ;;
+        "--antibody2") set -- "$@" "-a2" ;;
         "--threads") set -- "$@" "-t" ;;
         "--remove") set -- "$@" "-r" ;;
         "--help") set -- "$@" "-h" ;;
@@ -53,13 +57,15 @@ done
 pipedir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 SCRIPTS="$pipedir"/scripts
 
-while getopts ":i:g:o:s:q:t:r:h:" opt; do
+while getopts ":i:g:o:s:q:a1:a2:t:r:h:" opt; do
     case $opt in
         i) INPUT="$OPTARG";;
         g) GENOME="$OPTARG";;
         o) OUTPUT="$OPTARG";;
         s) STEP="$OPTARG";;
         q) QUALITY="$OPTARG";;
+        a1) ANTIBODY1="$OPTARG";;
+        a2) ANTIBODY2="$OPTARG";;
         t) THREADS="$OPTARG";;
         r) REMOVE=true;;
         h) help;;
