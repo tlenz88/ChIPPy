@@ -85,16 +85,16 @@ The following is a more detailed description of input arguments:
 
 ## What are the individual steps within the pipeline?
 
-# **Quality check**:
+- **Quality check**:
 
-# **Trimming**:
+- **Trimming**:
 
-# **Alignment**:
+- **Alignment**:
 
-# **Deduplication**:
+- **Deduplication**:
 
-# **Filtering**:
+- **Filtering**:
 
-# **Sorting**:
+- **Sorting**:
 
-# **Mapping**:
+- **Mapping**:
