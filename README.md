@@ -1,5 +1,6 @@
 # ChIPpipe
-***This is a complete pipeline for ChIP-seq data analysis. Required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.***
+
+This is a complete pipeline for ChIP-seq data analysis. Required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
 
 ## How do I organize my data?
 
