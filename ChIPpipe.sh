@@ -184,25 +184,6 @@ if [[ -z $THREADS ]]; then
 fi
 
 
-#################################################################
-## Define Phred quality score cutoff and alignment sensitivity ##
-#################################################################
-if [[ -z $QUALITY ]]; then
-    QUALITY=30
-    SENSITIVITY="--very-sensitive"
-else
-    if [[ $QUALITY -lt 10 ]]; then
-        SENSITIVITY="--very-fast"
-    elif [[ $QUALITY -ge 10 && $QUALITY -lt 20 ]]; then
-        SENSITIVITY="--fast"
-    elif [[ $QUALITY -ge 20 && $QUALITY -lt 30 ]]; then
-        SENSITIVITY="--sensitive"
-    elif [[ $QUALITY -ge 30 ]]; then 
-        SENSITIVITY="--very-sensitive"
-    fi
-fi
-
-
 ####################################################
 ## Check starting step and required files option. ##
 ####################################################
@@ -409,7 +390,7 @@ function alignment() {
         if [[ $tfq == 1 ]]; then
             tfq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_trimmed.fastq*" -o -name "*_trimmed.fq*" )
             out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$tfq_r1")")")/$(basename "${tfq_r1%_*}")"
-            bowtie2 -x "$bidx" -1 "$tfq_r1" -S "${out}_aligned.sam" -p "$THREADS" "$SENSITIVITY"
+            bowtie2 -x "$bidx" -1 "$tfq_r1" -S "${out}_aligned.sam" -p "$THREADS" --very-sensitive
             if [[ "$REMOVE" == true ]]; then
                 rm "$i"/*_trimmed.fastq*
             fi
@@ -418,7 +399,7 @@ function alignment() {
             tfq_r2=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*_paired.fastq*" -o -name "*_paired.fq*" \) -and -name "*_R2*")
             out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$tfq_r1")")")/$(basename "${tfq_r1%_*}")"
             asam="${out/_R1/}"
-            bowtie2 -x "$bidx" -1 "$tfq_r1" -2 "$tfq_r2" -S "${asam}_aligned.sam" -p "$THREADS" "$SENSITIVITY"
+            bowtie2 -x "$bidx" -1 "$tfq_r1" -2 "$tfq_r2" -S "${asam}_aligned.sam" -p "$THREADS" --very-sensitive
             if [[ "$REMOVE" == true ]]; then
                 rm "$i"/*_paired.fastq* "$i"/*_unpaired.fastq*
             fi
