@@ -37,7 +37,7 @@ Although the ChIPpipe script automatically downloads most of the necessary softw
 
 Any genome can be used as long as a properly formatted '.fasta' file is provided. For the tools that require a '.gff' file, ensure that the basename of the file is the same as the '.fasta' file provided. Any additional files, such as bowtie2 indexes and a chromosome sizes file, will be created automatically if not already present.
 
-Two genomes have been provided in the <genomes> folder, along with their respective '.gff' files.
+You may want to download IGV because a '.wig' file will be generated for easier visualization in the IGV genome browser.
 
 ## How do I use it?
 
