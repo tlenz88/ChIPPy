@@ -22,7 +22,7 @@ Put all input files in a single directory with one folder per sample. The sequen
 
 ## What do I need to run the pipeline?
 
-Although the ChIPpipe script does automatically download most of the necessary software/tools, depending on your system you may need to install some things manually. Here is a list of all the necessary tools to run the complete pipeline:
+Although the ChIPpipe script automatically downloads most of the necessary software/tools, depending on your system you may need to install some things manually. The only software that requires manual installation is **trimmomatic** due to compatibility issues with the java version specified in the build.xml file in the Trimmomatic repo. Here is a list of all the necessary tools to run the complete pipeline:
 
 - python3/pip3
 - R
@@ -33,7 +33,11 @@ Although the ChIPpipe script does automatically download most of the necessary s
 - samtools
 - macs2
 
-The only software that requires manual installation is **trimmomatic** due to compatibility issues with the java version specified in the build.xml file in the Trimmomatic repo.
+## What else do I need?
+
+Any genome can be used as long as a properly formatted '.fasta' file is provided. For the tools that require a '.gff' file, ensure that the basename of the file is the same as the '.fasta' file provided. Any additional files, such as bowtie2 indexes and a chromosome sizes file, will be created automatically if not already present.
+
+Two genomes have been provided in the <genomes> folder, along with their respective '.gff' files.
 
 ## How do I use it?
 
