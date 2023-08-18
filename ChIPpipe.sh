@@ -94,7 +94,7 @@ fi
 ######################################################
 ## Check Python installation and required packages. ##
 ######################################################
-for p in "python3" "fastqc" "bowtie2" "samtools"; do
+for p in "python3" "python3-pip" "fastqc" "bowtie2" "samtools"; do
     if ! command -v "$p" &> /dev/null; then
         echo "Installing newest version of $p."
         if command -v apt &> /dev/null; then

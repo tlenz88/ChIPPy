@@ -82,3 +82,19 @@ The following is a more detailed description of input arguments:
     --threads [-t]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on your system.
 
     --remove [-r]: Removes intermediate files when no longer needed by pipeline to save hard drive space.
+
+## What are the individual steps within the pipeline?
+
+# **Quality check**:
+
+# **Trimming**:
+
+# **Alignment**:
+
+# **Deduplication**:
+
+# **Filtering**:
+
+# **Sorting**:
+
+# **Mapping**:
