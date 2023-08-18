@@ -91,13 +91,16 @@ The following is a more detailed description of input arguments:
 ## What are the individual steps within the pipeline?
 
 - **Quality check**:
-        FastQC is used to check sequence quality prior to running analysis pipeline. In brief, statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from your input '.fastq(.gz)' files. See [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
+
+    FastQC is used to check sequence quality prior to running analysis pipeline. In brief, statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from your input '.fastq(.gz)' files. See [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
 
 - **Trimming**:
-        Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality \[-q\]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit your specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using Paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
+
+    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality \[-q\]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit your specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using Paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
 
 - **Alignment**:
-        The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the '.fasta' file provided by the 'genome \[-g\]' argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive option is used to specify a high-sensitivity mode. A single SAM file is output for each aligned sample. See [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
+
+    The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the '.fasta' file provided by the 'genome \[-g\]' argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive option is used to specify a high-sensitivity mode. A single SAM file is output for each aligned sample. See [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
 
 - **Deduplication**:
 
