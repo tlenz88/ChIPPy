@@ -8,7 +8,7 @@
 
 function help {
     echo "ChIPpipe.sh --help"
-    echo "usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r]"
+    echo "usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-a1 ANTIBODY1] [-a2 ANTIBODY2] [-t THREADS] [-r]"
     echo
     echo "----------------------------------------------------------------"
     echo "Required inputs:"
@@ -17,7 +17,7 @@ function help {
     echo
     echo "Optional inputs:"
     echo "  -o|--output OUTPUT       : Output folder."
-    echo "  -s|--step  STEP          : Choose starting step."
+    echo "  -s|--step STEP           : Choose starting step."
     echo "         quality_check     : Initial quality check."
     echo "              trimming     : Adapter trimming."
     echo "             alignment     : Read alignment."
@@ -30,6 +30,7 @@ function help {
     echo " -a2|--antibody2 ANTIBODY2 : Control antibody (IGG) or input."
     echo "  -t|--threads THREADS     : Processor threads."
     echo "  -r|--remove REMOVE       : Remove intermediate files."
+    echo "  -h|--help HELP           : Show help message."
     echo "----------------------------------------------------------------"
     exit 0;
 }
@@ -160,16 +161,22 @@ if [[ $GENOME != "" ]]; then
     fa=$(find -L "$GENOME" -mindepth 1 -maxdepth 1 \( -name "*.fasta" -o -name "*.fa" \))
     bname="${fa%%.*}"
     if [[ ! -e "$bname.1.bt2" ]]; then
-        echo "Bowtie2 indexes are missing. Creating indexes..."
+        echo "Creating Bowtie2 indexes."
         bowtie2-build --threads "$THREADS" "$fa" "$bname"
     else
         echo "Bowtie2 indexes detected."
     fi
     if [[ ! -e "$bname.chrom.sizes" ]]; then
-        echo "Creating chromosome sizes file"
+        echo "Creating chromosome sizes file."
         "$SCRIPTS"/create_sizes.py "$fa"
     else
         echo "Chromosome sizes file detected."
+    fi
+    if [[ ! -e "$fa.fai" ]]; then
+        echo "Creating FASTA index."
+        samtools faidx "$fa"
+    else
+        echo "FASTA index detected."
     fi
     if [[ ! -e "$bname.gff" ]]; then
         echo "GFF file not detected. Some plots will not be generated."
@@ -194,7 +201,7 @@ fi
 ## Check starting step and required files option. ##
 ####################################################
 STEP="${STEP/^ //}"
-ALL_STEPS=("quality_check" "trimming" "alignment" "deduplication" "filtering" "sorting" "mapping")
+ALL_STEPS=("quality_check" "trimming" "alignment" "deduplication" "filtering" "sorting" "mapping" "peak_calling")
 QUALITY_CHECK="quality_check"
 TRIMMING="trimming"
 ALIGNMENT="alignment"
@@ -202,6 +209,7 @@ DEDUPLICATION="deduplication"
 FILTERING="filtering"
 SORTING="sorting"
 MAPPING="mapping"
+PEAK_CALLING="peak_calling"
 
 if [[ $STEP != "" ]]; then
     case $STEP in
@@ -212,6 +220,7 @@ if [[ $STEP != "" ]]; then
         "filtering") FILTERED_STEPS=("${ALL_STEPS[@]:4}");;
         "sorting") FILTERED_STEPS=("${ALL_STEPS[@]:5}");;
         "mapping") FILTERED_STEPS=("${ALL_STEPS[@]:6}");;
+        "peak_calling") FILTERED_STEPS=("${ALL_STEPS[@]:7}");;
         *) echo "Invalid step: $STEP"; exit 1;;
     esac
 else
@@ -315,6 +324,15 @@ if [[ "$STEP" != "" ]]; then
                 fi
             fi
         done
+        for i in "${PEAK_CALLING[@]}"; do
+            if [[ "$i" == "$s" ]]; then 
+                sbam=$(find -L "$INPUT" -mindepth 2 -maxdepth 4 -name "*_sorted.bam" | wc -l)
+                if [[ "$sbam" == 0 ]]; then
+                    echo "Error: Sorted BAM files are required to start the pipeline at the peak_calling step."
+                    exit 1
+                fi
+            fi
+        done
     done
 else
     echo
@@ -358,6 +376,9 @@ function quality_check() {
 }
 
 function trimming() {
+    if [[ "$STEP" == "trimming" ]]; then
+        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
+        echo
     echo "Trimming and pairing R1 and R2 reads."
     for i in "$INPUT"/*; do
         basename "$i"
@@ -382,12 +403,14 @@ function trimming() {
 }
 
 function alignment() {
-    echo "Aligning reads to the genome."
     if [[ "$STEP" == "alignment" ]]; then
+        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
+        echo
         DIR="$INPUT"
     else
         DIR="$OUTPUT"
     fi
+    echo "Aligning reads to the genome."
     for i in "$DIR"/*; do
         basename "$i"
         tfq=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_trimmed.fastq*" -o -name "*_trimmed.fq*" -o -name "*_paired.fastq*" -o -name "*_paired.fq*"  | wc -l)
@@ -418,12 +441,14 @@ function alignment() {
 }
 
 function deduplication() {
-    echo "Removing PCR duplicates."
     if [[ "$STEP" == "deduplication" ]]; then
+        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
+        echo
         DIR="$INPUT"
     else
         DIR="$OUTPUT"
     fi
+    echo "Removing PCR duplicates."
     for i in "$DIR"/*; do
         basename "$i"
         sam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_aligned.sam" | wc -l)
@@ -444,12 +469,14 @@ function deduplication() {
 }
 
 function filtering() {
-    echo "Filtering low quality reads."
     if [[ "$STEP" == "filtering" ]]; then
+        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
+        echo
         DIR="$INPUT"
     else
         DIR="$OUTPUT"
     fi
+    echo "Filtering low quality reads."
     for i in "$DIR"/*; do
         basename "$i"
         sam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.sam" | wc -l)
@@ -469,12 +496,14 @@ function filtering() {
 }
 
 function sorting() {
-    echo "Sorting reads"
     if [[ "$STEP" == "sorting" ]]; then
+        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
+        echo
         DIR="$INPUT"
     else
         DIR="$OUTPUT"
     fi
+    echo "Sorting reads"
     for i in "$DIR"/*; do
         basename "$i"
         bam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.bam" | wc -l)
@@ -516,12 +545,14 @@ function sorting() {
 }
 
 function mapping() {
-    echo "Calculating genome-wide coverage at each base pair."
     if [[ "$STEP" == "mapping" ]]; then
+        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
+        echo
         DIR="$INPUT"
     else
         DIR="$OUTPUT"
     fi
+    echo "Calculating genome-wide coverage at each base pair."
     for i in "$DIR"/*; do
         basename "$i"
         bam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" | wc -l)
@@ -536,11 +567,41 @@ function mapping() {
     done
     echo
 }
+###############################################################################################################################################################
+function peak_calling() {
+    if [[ "$STEP" == "peak_calling" ]]; then
+        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
+        echo
+        DIR="$INPUT"
+    else
+        DIR="$OUTPUT"
+    fi
+    echo "Performing peak-calling."
+    for i in "$DIR"/*"$ANTIBODY1"*; do
+        basename "$i"
+        sbam1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "$ANTIBODY1" | wc -l)
+        if [[ "$sbam1" == 1 ]]; then
+            sbam1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "$ANTIBODY1")
+            npeaks="$(basename "${sbam1%_*}")"
+            gsize=$(awk '{sum+=$2} END {print sum}' "$fa".fai)
+            echo "$npeaks"
+            echo "$gsize"
+            exit1
+            sbam2=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "$ANTIBODY2")
+            macs2 callpeak -t "$sbam1" -c "$sbam2" -n "$npeaks"
+        #elif [[ "$sbam" == 0 ]]; then
+        #    echo "Error: Sorted BAM files are required for the mapping step."
+        #    exit 1
+        fi
+    done
+    echo
+}
 
 
 ###################
 ## Run pipeline. ##
 ###################
-for s in "${FILTERED_STEPS[@]}"; do
-    "$s"
-done
+#for s in "${FILTERED_STEPS[@]}"; do
+#    "$s"
+#done
+peak_calling

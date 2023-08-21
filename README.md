@@ -1,6 +1,6 @@
 # ChIPpipe
 ##
-This is a complete pipeline for ChIP-seq data analysis. Required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
+This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
 
 ## How do I organize my data?
 
@@ -47,16 +47,16 @@ Brief description of input arguments via help message:
 
 ```
     ChIPpipe.sh --help
-    usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r]
+    usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-a1 ANTIBODY1] [-a2 ANTIBODY2] [-t THREADS] [-r]
 
     ----------------------------------------------------------------
     Required inputs:
-     -i|--input  INPUT         : Input data folder.
-     -g|--genome GENOME        : Path to genome files.
+      -i|--input  INPUT        : Input data folder.
+      -g|--genome GENOME       : Path to genome files.
 
     Optional inputs:
-     -o|--output OUTPUT        : Output folder.
-     -s|--step  STEP           : Choose starting step.
+      -o|--output OUTPUT       : Output folder.
+      -s|--step STEP           : Choose starting step.
             quality_check      : Initial quality check.
                  trimming      : Adapter trimming.
                 alignment      : Read alignment.
@@ -64,11 +64,12 @@ Brief description of input arguments via help message:
                 filtering      : Filtering low-quality reads.
                   sorting      : Sorting reads by coordinate.
                   mapping      : Mapping reads to each base pair
-     -q|--quality QUALITY      : Phred quality score for filtering.
+      -q|--quality QUALITY     : Phred quality score for filtering.
      -a1|--antibody1 ANTIBODY1 : Target antibody.
      -a2|--antibody2 ANTIBODY2 : Control antibody (IGG) or input.
-     -t|--threads THREADS      : Processor threads.
-     -r|--remove REMOVE        : Remove intermediate files.
+      -t|--threads THREADS     : Processor threads.
+      -r|--remove REMOVE       : Remove intermediate files.
+      -h|--help HELP           : Show help message.
     ----------------------------------------------------------------
 ```
 
@@ -90,7 +91,7 @@ The following is a more detailed description of input arguments:
 
     --antibody1 [-a1]: Name or value indicating the targeted antibody in your experiment. This value is used to differentiate the targeted samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-a1 H3K9me3``` would indicate that all samples with 'H3K9me3' as part of their filename are the targeted samples. However, the input does not have to be valid antibody, but can be any string that is used within your sample names to indicate your targeted samples.
 
-    --antibody2 [-a2]: Name or value indicating the control or input samples in your experiment. Like '--antibody1', this value is used to differentiate the control samples from the targeted samples, therefore the argument should be a string in the filenames. e.g. ```-a2 IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples. This can also be any string that is used within your sample names, but will be used to indicate your control samples.
+    --antibody2 [-a2]: Name or value indicating the control or input samples in your experiment. Like '--antibody1', this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within your sample names, but will be used to indicate your control samples. e.g. ```-a2 IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
 
     --threads [-t]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on your system.
 
@@ -112,8 +113,20 @@ The following is a more detailed description of input arguments:
 
 - **Deduplication**:
 
+    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments. Deduplication metrics are output in a text file. See [project website](https://broadinstitute.github.io/picard/) for more details.
+
 - **Filtering**:
+
+    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using Samtools view. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags '-f 0x02' and '-F 0x04'. See [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Sorting**:
 
+    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using Samtools sort to make mapping faster. See [project website](https://www.htslib.org/doc/samtools.html) for more details.
+
 - **Mapping**:
+
+    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using Samtools depth. The output BED file is a tab-delimited file with three columns: 'chromosome', 'position' and 'reads'. See [project website](https://www.htslib.org/doc/samtools.html) for more details.
+
+- **Peak calling**:
+
+
