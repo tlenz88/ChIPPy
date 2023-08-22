@@ -89,7 +89,7 @@ The following is a more detailed description of input arguments:
 
     --quality [-q]: Integer indicating Phred quality score for trimming low-quality bases at the ends of reads during read pairing and for removing low-quality reads during filtering. Phred score will also be used to approximate filtering settings during alignment.
 
-    --treatment [-t]: Name or value indicating the targeted antibody in your experiment. This value is used to differentiate the targeted/treatment samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-t H3K9me3``` would indicate that all samples with 'H3K9me3' as part of their filename are the targeted/treatment samples. This arguement does not have to be valid antibody, but can be any string that is used within your sample names to indicate your targeted samples. However, if you are targeting a histone modification, this arguement should at least be the base name of your targeted histone modification, such as ```-t H3K``` or ```-t H2A```, so that peak calling is made more accurate by using the proper peak calling algorithm.
+    --treatment [-t]: Name or value indicating the targeted antibody in your experiment. This value is used to differentiate the targeted/treatment samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-t H3K9me3``` would indicate that all samples with 'H3K9me3' as part of their filename are the targeted/treatment samples. This argument does not have to be valid antibody, but can be any string that is used within your sample names to indicate your targeted samples. However, if you are targeting a histone modification, this argument should at least be the base name of your targeted histone modification, such as ```-t H3K``` or ```-t H2A```, so that peak calling is made more accurate by using the proper peak calling algorithm.
 
     --control [-c]: Name or value indicating the control or input samples in your experiment. Like '--antibody1', this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within your sample names, but will be used to indicate your control samples. e.g. ```-a2 IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
 
@@ -101,32 +101,32 @@ The following is a more detailed description of input arguments:
 
 - **Quality check**:
 
-    FastQC is used to check sequence quality prior to running analysis pipeline. In brief, statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from your input '.fastq(.gz)' files. See [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
+    FastQC is used to check sequence quality prior to running analysis pipeline. In brief, statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from your input '.fastq(.gz)' files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
 
 - **Trimming**:
 
-    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality [-q]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit your specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using Paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
+    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality [-q]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit your specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using Paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See the [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
 
 - **Alignment**:
 
-    The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the '.fasta' file provided by the 'genome [-g]' argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive option is used to specify a high-sensitivity mode. A single SAM file is output for each aligned sample. See [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
+    The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the '.fasta' file provided by the 'genome [-g]' argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive option is used to specify a high-sensitivity mode. A single SAM file is output for each aligned sample. See the [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
 
 - **Deduplication**:
 
-    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments. Deduplication metrics are output in a text file. See [project website](https://broadinstitute.github.io/picard/) for more details.
+    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
 
 - **Filtering**:
 
-    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using Samtools view. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags '-f 0x02' and '-F 0x04'. See [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using Samtools view. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags '-f 0x02' and '-F 0x04'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Sorting**:
 
-    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using Samtools sort to make mapping faster. See [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using Samtools sort to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Mapping**:
 
-    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using Samtools depth. The output BED file is a tab-delimited file with three columns: 'chromosome', 'position' and 'reads'. See [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using Samtools depth. The output BED file is a tab-delimited file with three columns: 'chromosome', 'position' and 'reads'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Peak calling**:
 
-    Peak calling is performed using macs2 callpeak. 
+    Peak calling is performed using macs2 callpeak. The q-value is set at 0.05, genome size is determined automatically from the 'genome [-g]' argument. If the data is paired-end, the format of the input will be set to ```-f BEDPE``` so that the insert size of pairs is used to build fragment pileup. The choice of peak calling algorithm--broad or narrow--is determined by the 'treatment [-t]' argument. Broad peak calling is performed for histone modifications, whereas narrow peak calling is for transcription factors. If no peaks are called using the default ```--mfold``` parameter, ```macs2 callpeak``` will be repeatedly run using a decreasing lower limit for model building until enough peaks are found to build the shifting model or until the lower limit reaches '1'. See the [github repo](https://github.com/macs3-project/MACS) for more details.
