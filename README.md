@@ -129,4 +129,4 @@ The following is a more detailed description of input arguments:
 
 - **Peak calling**:
 
-
+    Peak calling is performed using macs2 callpeak. 

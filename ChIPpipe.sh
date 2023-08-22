@@ -8,7 +8,7 @@
 
 function help {
     echo "ChIPpipe.sh --help"
-    echo "usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-a1 ANTIBODY1] [-a2 ANTIBODY2] [-t THREADS] [-r]"
+    echo "usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t treatment] [-c control] [-p THREADS] [-r]"
     echo
     echo "----------------------------------------------------------------"
     echo "Required inputs:"
@@ -26,9 +26,9 @@ function help {
     echo "               sorting     : Sorting reads by coordinate."
     echo "               mapping     : Mapping reads to each base pair"
     echo "  -q|--quality QUALITY     : Phred quality score for filtering."
-    echo " -a1|--antibody1 ANTIBODY1 : Target antibody."
-    echo " -a2|--antibody2 ANTIBODY2 : Control antibody (IGG) or input."
-    echo "  -t|--threads THREADS     : Processor threads."
+    echo "  -t|--treatment TREATMENT : Target antibody."
+    echo "  -c|--control CONTROL     : Control antibody (IGG) or input."
+    echo "  -p|--proc THREADS        : Processor threads."
     echo "  -r|--remove REMOVE       : Remove intermediate files."
     echo "  -h|--help HELP           : Show help message."
     echo "----------------------------------------------------------------"
@@ -46,9 +46,9 @@ for arg in "$@"; do
         "--output") set -- "$@" "-o" ;;
         "--step") set -- "$@" "-s" ;;
         "--quality") set -- "$@" "-q" ;;
-        "--antibody1") set -- "$@" "-a1" ;;
-        "--antibody2") set -- "$@" "-a2" ;;
-        "--threads") set -- "$@" "-t" ;;
+        "--treatment") set -- "$@" "-t" ;;
+        "--control") set -- "$@" "-c" ;;
+        "--proc") set -- "$@" "-p" ;;
         "--remove") set -- "$@" "-r" ;;
         "--help") set -- "$@" "-h" ;;
         *) set -- "$@" "$arg"
@@ -58,16 +58,16 @@ done
 pipedir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 SCRIPTS="$pipedir"/scripts
 
-while getopts ":i:g:o:s:q:a1:a2:t:r:h:" opt; do
+while getopts ":i:g:o:s:q:t:c:p:r:h:" opt; do
     case $opt in
         i) INPUT="$OPTARG";;
         g) GENOME="$OPTARG";;
         o) OUTPUT="$OPTARG";;
         s) STEP="$OPTARG";;
         q) QUALITY="$OPTARG";;
-        a1) ANTIBODY1="$OPTARG";;
-        a2) ANTIBODY2="$OPTARG";;
-        t) THREADS="$OPTARG";;
+        t) TREATMENT="$OPTARG";;
+        c) CONTROL="$OPTARG";;
+        p) THREADS="$OPTARG";;
         r) REMOVE=true;;
         h) help;;
         *) echo "Error: '$OPTARG' is an invalid argument."
@@ -102,7 +102,7 @@ fi
 ######################################################
 ## Check Python installation and required packages. ##
 ######################################################
-for p in "python3" "python3-pip" "fastqc" "bowtie2" "samtools"; do
+for p in "python3" "fastqc" "bowtie2" "samtools"; do
     if ! command -v "$p" &> /dev/null; then
         echo "Installing newest version of $p."
         if command -v apt &> /dev/null; then
@@ -137,7 +137,7 @@ if ! command -v macs2 &> /dev/null; then
     pip3 install macs2
 fi
 
-for pkg in "biopython" "matplotlib" "numpy" "pandas"; do
+for pkg in "matplotlib" "numpy" "pandas"; do
     if ! python3 -c "import $pkg" &> /dev/null; then
         echo "Installing $pkg."
         pip3 install "$pkg"
@@ -190,10 +190,28 @@ fi
 
 
 #################################################
+## Define Phred score for quality filtering. ##
+#################################################
+if [[ -z $QUALITY ]]; then
+    QUALITY=30
+fi
+
+
+#################################################
 ## Define number of processing threads to use. ##
 #################################################
 if [[ -z $THREADS ]]; then
     THREADS=$(($(nproc) / 2))
+fi
+
+
+################################################################
+## Define peak calling algorithm based on treatment antibody. ##
+################################################################
+if [[ $TREATMENT == "H3K"* || $TREATMENT == "H2AK"* || $TREATMENT == "H2BK"* || $TREATMENT == "H4K"* ]]; then
+    alg="BROAD"
+else
+    alg=""
 fi
 
 
@@ -379,6 +397,7 @@ function trimming() {
     if [[ "$STEP" == "trimming" ]]; then
         echo "Starting ChIP-seq analysis pipeline at the $STEP step."
         echo
+    fi
     echo "Trimming and pairing R1 and R2 reads."
     for i in "$INPUT"/*; do
         basename "$i"
@@ -387,13 +406,13 @@ function trimming() {
         if [[ "$fq" == 1 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*.fastq*" -o -name "*.fq*" )
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
-            java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/Illumina_CD_index_adapters.txt:2:30:10
+            java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
         elif [[ "$fq" == 2 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R1*")
             fq_r2=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R2*")
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
             out_r2="$OUTPUT"/"$(basename "$(dirname "$fq_r2")")"/"$(basename "${fq_r2%%.*}")"
-            java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/Illumina_CD_index_adapters.txt:2:30:10
+            java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
         elif [[ "$fq" == 0 ]]; then
             echo "Error: Input files must be '.fastq(.gz)'."
             exit 1
@@ -567,7 +586,7 @@ function mapping() {
     done
     echo
 }
-###############################################################################################################################################################
+
 function peak_calling() {
     if [[ "$STEP" == "peak_calling" ]]; then
         echo "Starting ChIP-seq analysis pipeline at the $STEP step."
@@ -576,24 +595,52 @@ function peak_calling() {
     else
         DIR="$OUTPUT"
     fi
-    echo "Performing peak-calling."
-    for i in "$DIR"/*"$ANTIBODY1"*; do
-        basename "$i"
-        sbam1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "$ANTIBODY1" | wc -l)
-        if [[ "$sbam1" == 1 ]]; then
-            sbam1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "$ANTIBODY1")
-            npeaks="$(basename "${sbam1%_*}")"
-            gsize=$(awk '{sum+=$2} END {print sum}' "$fa".fai)
-            echo "$npeaks"
-            echo "$gsize"
-            exit1
-            sbam2=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "$ANTIBODY2")
-            macs2 callpeak -t "$sbam1" -c "$sbam2" -n "$npeaks"
-        #elif [[ "$sbam" == 0 ]]; then
-        #    echo "Error: Sorted BAM files are required for the mapping step."
-        #    exit 1
-        fi
-    done
+    if [[ -z $TREATMENT || -z $CONTROL ]]; then
+        echo "Can't determine treatment or control samples for peak calling. Rerun using '-t' and '-c' flags."
+    else
+        echo "Performing peak-calling."
+        for i in "$DIR"/*"$TREATMENT"*; do
+            basename "$i"
+            sbam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$TREATMENT*" | wc -l)
+            if [[ "$sbam" == 1 ]]; then
+                treatment=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$TREATMENT*")
+                fq=$(samtools view -f 0x1 "$treatment" | wc -l)
+                if [[ "$fq" -gt 0 ]]; then
+                    bam="BAMPE"
+                else
+                    bam="BAM"
+                fi
+                npeaks="$(basename "${treatment%_*}")"
+                gsize=$(awk '{sum+=$2} END {print sum}' "$fa".fai)
+                bn="${treatment/"$TREATMENT"/"$CONTROL"}"
+                control=$(find -L "$(dirname "$bn")" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$CONTROL*")
+                out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$treatment")")")"
+                if [[ "$alg" == "BROAD" ]]; then
+                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B --broad
+                else
+                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B
+                fi
+            elif [[ "$sbam" == 0 ]]; then
+                echo "Error: Sorted BAM files are required for the mapping step."
+                exit 1
+            fi
+            peaks=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*Peak" -and -name "*$TREATMENT*" | wc -l)
+            mf=5
+            while [[ "$peaks" == 0  && "$mf" -gt 1 ]]; do
+                mf=$((mf - 1))
+                if [[ "$alg" == "BROAD" ]]; then
+                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B --broad --mfold "$mf" 50
+                else
+                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B --mfold "$mf" 50
+                fi
+                peaks=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*Peak" -and -name "*$TREATMENT*" | wc -l)
+            done
+            if [[ "$mf" -lt 5 ]]; then
+                echo
+                echo "Lower limit set to $mf for model building. Record this value for future reference when reporting your analysis methods."
+            fi
+        done
+    fi
     echo
 }
 
@@ -601,7 +648,6 @@ function peak_calling() {
 ###################
 ## Run pipeline. ##
 ###################
-#for s in "${FILTERED_STEPS[@]}"; do
-#    "$s"
-#done
-peak_calling
+for fs in "${FILTERED_STEPS[@]}"; do
+    "$fs"
+done
