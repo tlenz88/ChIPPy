@@ -47,7 +47,7 @@ Brief description of input arguments via help message:
 
 ```
     ChIPpipe.sh --help
-    usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-a1 ANTIBODY1] [-a2 ANTIBODY2] [-t THREADS] [-r]
+    usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t TREATMENT] [-c CONTROL] [-p THREADS] [-r]
 
     ----------------------------------------------------------------
     Required inputs:
@@ -65,9 +65,9 @@ Brief description of input arguments via help message:
                   sorting      : Sorting reads by coordinate.
                   mapping      : Mapping reads to each base pair
       -q|--quality QUALITY     : Phred quality score for filtering.
-     -a1|--antibody1 ANTIBODY1 : Target antibody.
-     -a2|--antibody2 ANTIBODY2 : Control antibody (IGG) or input.
-      -t|--threads THREADS     : Processor threads.
+      -t|--treatment TREATMENT : Target antibody.
+      -c|--control CONTROL     : Control antibody (IGG) or input.
+      -p|--proc THREADS        : Processor threads.
       -r|--remove REMOVE       : Remove intermediate files.
       -h|--help HELP           : Show help message.
     ----------------------------------------------------------------
@@ -89,11 +89,11 @@ The following is a more detailed description of input arguments:
 
     --quality [-q]: Integer indicating Phred quality score for trimming low-quality bases at the ends of reads during read pairing and for removing low-quality reads during filtering. Phred score will also be used to approximate filtering settings during alignment.
 
-    --antibody1 [-a1]: Name or value indicating the targeted antibody in your experiment. This value is used to differentiate the targeted samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-a1 H3K9me3``` would indicate that all samples with 'H3K9me3' as part of their filename are the targeted samples. However, the input does not have to be valid antibody, but can be any string that is used within your sample names to indicate your targeted samples.
+    --treatment [-t]: Name or value indicating the targeted antibody in your experiment. This value is used to differentiate the targeted/treatment samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-t H3K9me3``` would indicate that all samples with 'H3K9me3' as part of their filename are the targeted/treatment samples. This arguement does not have to be valid antibody, but can be any string that is used within your sample names to indicate your targeted samples. However, if you are targeting a histone modification, this arguement should at least be the base name of your targeted histone modification, such as ```-t H3K``` or ```-t H2A```, so that peak calling is made more accurate by using the proper peak calling algorithm.
 
-    --antibody2 [-a2]: Name or value indicating the control or input samples in your experiment. Like '--antibody1', this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within your sample names, but will be used to indicate your control samples. e.g. ```-a2 IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
+    --control [-c]: Name or value indicating the control or input samples in your experiment. Like '--antibody1', this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within your sample names, but will be used to indicate your control samples. e.g. ```-a2 IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
 
-    --threads [-t]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on your system.
+    --proc [-p]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on your system.
 
     --remove [-r]: Removes intermediate files when no longer needed by pipeline to save hard drive space.
 
