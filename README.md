@@ -101,7 +101,7 @@ The following is a more detailed description of input arguments:
 
 - **Quality check**:
 
-    FastQC is used to check sequence quality prior to running analysis pipeline. In brief, statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from your input '.fastq(.gz)' files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
+    FastQC is used to check sequence quality prior to running analysis pipeline. Statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from your input '.fastq(.gz)' files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
 
 - **Trimming**:
 
