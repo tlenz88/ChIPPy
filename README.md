@@ -113,19 +113,19 @@ The following is a more detailed description of input arguments:
 
 - **Deduplication**:
 
-    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
+    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments using ```picard markDuplicates```. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
 
 - **Filtering**:
 
-    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using Samtools view. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags '-f 0x02' and '-F 0x04'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using ```samtools view```. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags '-f 0x02' and '-F 0x04'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Sorting**:
 
-    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using Samtools sort to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using ```samtools sort``` to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Mapping**:
 
-    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using Samtools depth. The output BED file is a tab-delimited file with three columns: 'chromosome', 'position' and 'reads'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: 'chromosome', 'position' and 'reads'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Peak calling**:
 
