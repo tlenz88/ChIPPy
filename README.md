@@ -112,31 +112,31 @@ The following is a more detailed description of input arguments:
 
 - **Quality check**:
 
-    FastQC is used to check sequence quality prior to running analysis pipeline. Statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from input '.fastq(.gz)' files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
+    FastQC is used to check sequence quality prior to running analysis pipeline. Statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from input FASTQ files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
 
 - **Trimming**:
 
-    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the ```quality [-q]``` argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit a specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See the [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
+    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the ```quality [-q]``` argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit a specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as trimmed FASTQ files. If using paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs paired and unpaired files for each input FASTQ file. See the [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
 
 - **Alignment**:
 
-    The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the FASTA file provided by the ```genome [-g]``` argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive argument is used to specify the high-sensitivity mode. A single SAM file is output for each aligned sample. See the [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
+    The trimmed and/or paired files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the FASTA file provided by the ```genome [-g]``` argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive argument is used to specify the high-sensitivity mode. A single SAM file is output for each aligned sample. See the [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
 
 - **Deduplication**:
 
-    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments using ```picard markDuplicates```. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
+    PCR duplicates are removed from the SAM files using ```picard markDuplicates```. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
 
 - **Filtering**:
 
-    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using ```samtools view```. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags ```-f 0x02 -F 0x04```. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Low-quality reads with Phred score less than 30 are removed from the deduplicated SAM files using ```samtools view```. The filtered BAM files only includes properly paired aligned reads using the flags ```-f 0x02 -F 0x04```. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Sorting**:
 
-    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using ```samtools sort``` to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Once deduplicated and filtered, the filtered BAM files are sorted by coordinate using ```samtools sort``` to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Mapping**:
 
-    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: chromosome name, position and reads. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    To get the depth of coverage at each nucleotide, the sorted BAM files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: chromosome name, position and reads. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Peak calling**:
 
