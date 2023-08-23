@@ -144,12 +144,14 @@ for pkg in "matplotlib" "numpy" "pandas"; do
     fi
 done
 
-if [[ $(find -L "$SCRIPTS" -mindepth 1 -maxdepth 4 -name "picard.jar" | wc -l) == 0 ]]; then
-    if [ ! -d "$SCRIPTS"/picard ]; then
-        echo "Installing picard."
-        git clone https://github.com/broadinstitute/picard.git "$SCRIPTS"/picard
+if ! command -v picard &> /dev/null; then
+    if [[ $(find -L "$SCRIPTS" -mindepth 1 -maxdepth 4 -name "picard.jar" | wc -l) == 0 ]]; then
+        if [ ! -d "$SCRIPTS"/picard ]; then
+            echo "Installing picard."
+            git clone https://github.com/broadinstitute/picard.git "$SCRIPTS"/picard
+        fi
+        "$SCRIPTS"/picard/gradlew -p "$SCRIPTS"/picard shadowJar
     fi
-    "$SCRIPTS"/picard/gradlew -p "$SCRIPTS"/picard shadowJar
 fi
 
 
@@ -402,17 +404,27 @@ function trimming() {
     for i in "$INPUT"/*; do
         basename "$i"
         fq=$(find -L "$i" -mindepth 1 -maxdepth 1  -name "*.fastq*" -o -name "*.fastq*" | wc -l)
-        tmjar=$(find -L "$SCRIPTS" -mindepth 1 -maxdepth 3 -name "*trimmomatic*")
+        if ! command -v trimmomatic &> /dev/null; then
+            tmjar=$(find -L "$SCRIPTS" -mindepth 1 -maxdepth 3 -name "*trimmomatic*")
+        fi
         if [[ "$fq" == 1 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*.fastq*" -o -name "*.fq*" )
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
-            java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+            if ! command -v trimmomatic &> /dev/null; then
+                java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+            else
+                trimmomatic SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+            fi
         elif [[ "$fq" == 2 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R1*")
             fq_r2=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R2*")
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
             out_r2="$OUTPUT"/"$(basename "$(dirname "$fq_r2")")"/"$(basename "${fq_r2%%.*}")"
-            java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+            if ! command -v trimmomatic &> /dev/null; then
+                java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+            else
+                trimmomatic PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+            fi
         elif [[ "$fq" == 0 ]]; then
             echo "Error: Input files must be '.fastq(.gz)'."
             exit 1
@@ -471,11 +483,17 @@ function deduplication() {
     for i in "$DIR"/*; do
         basename "$i"
         sam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_aligned.sam" | wc -l)
-        ptjar=$(find -L "$SCRIPTS" -mindepth 1 -maxdepth 4 -name "picard.jar")
+        if ! command -v picard &> /dev/null; then
+            ptjar=$(find -L "$SCRIPTS" -mindepth 1 -maxdepth 4 -name "picard.jar")
+        fi
         if [[ "$sam" == 1 ]]; then
             asam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_aligned.sam")
             dsam="$OUTPUT/$(basename "$(dirname "$(readlink -f "$asam")")")/$(basename "${asam%_*}")"
-            java -jar "$ptjar" MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname
+            if ! command -v picard &> /dev/null; then
+                java -jar "$ptjar" MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname
+            else
+                picard MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname
+            fi
             if [[ "$REMOVE" == true ]]; then
                 rm "$asam"
             fi

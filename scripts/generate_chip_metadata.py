@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Created: August 23, 2022
+Created: August 23, 2023
+Updated: August 23, 2023
 Author(s): Todd Lenz, tlenz001@ucr.edu
 
 Generates the ChIP-seq metadata file required as input for the DiffBind

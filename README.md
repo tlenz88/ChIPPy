@@ -1,6 +1,5 @@
 # ChIPPy
 This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
-##
 
 ## How do I organize my data?
 
@@ -22,18 +21,30 @@ Put all input files in a single directory with one folder per sample. The sequen
 
 ## What tools do I need to run the pipeline?
 
-Although the ChIPPy script automatically downloads most of the necessary software/tools, depending on the system environment the user may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
+Although ChIPPy automatically downloads most of the necessary software/tools, depending on the system environment the user may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
 
 - Python3/pip3
 - R
-- fastqc
+- FastQC
 - Trimmomatic
 - Bowtie2
-- Picardtools
+- Picard
 - Samtools
 - MACS2
 
 Any version of Python3 and R are acceptable, but it is recommended that the user upgrade to the latest versions.
+
+### Conda environment installation
+
+To make installation of ChIPPy dependencies easier, users can create a conda environment using the provided YAML file.
+
+1. Download and install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://www.anaconda.com/download).
+
+2. Create conda environment: ```conda env create -f environment.yml```
+
+3. Activate environment: ```conda activate ChIPPy```
+
+***Usage***: conda env create -f environment.yml 
 
 ## What else do I need?
 

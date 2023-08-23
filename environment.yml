@@ -1,0 +1,15 @@
+# Usage: conda env create -f environment.yml
+
+name: ChIPPy
+channels:
+ - conda-forge
+ - bioconda
+ - defaults
+dependencies:
+ - python=3.8
+ - fastqc
+ - trimmomatic
+ - bowtie2
+ - picard
+ - samtools
+ - macs2

@@ -1,12 +1,11 @@
 # ChIPPy utilities
 ChIPPy uses several python scripts to automate plotting of ChIP-seq data. These tools can be easily used independently if a different pipeline or tools were used to perform ChIP-seq analysis.
-##
 
 ## plot_chromosome_coverage.py
 
 Plots genomewide coverage for ChIP-seq data. Track lengths are normalized with respect to the longest chromosome--i.e. the longest chromosome will fill the width of the figure and all other chromosomes are proportionally plotted against it.
 
-**Usage**: ```plot_chromosome_coverage.py  -b sample1.bed sample2.bed sample3.bed
+**Usage**: ```plot_chromosome_coverage.py  -b sample1.bed sample2.bed sample3.bed```
 
 - **Required input arguments**:
 
@@ -32,7 +31,7 @@ Plots genomewide coverage for ChIP-seq data. Track lengths are normalized with r
 
 ## plot_gene_coverage.py
 
-**Usage**: ```plot_gene_coverage.py -b sample1.bed sample2.bed sample3.bed -g genome.gff
+**Usage**: ```plot_gene_coverage.py -b sample1.bed sample2.bed sample3.bed -g genome.gff```
 
 - **Required input arguments**:
 
