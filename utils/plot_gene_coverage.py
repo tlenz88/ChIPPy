@@ -1,40 +1,14 @@
 #!/usr/bin/env python
+
 """
-Created July 10, 2023
-Updated August 8, 2023
+Created: July 10, 2023
+Updated: August 23, 2023
+Author(s): Todd Lenz, tlenz001@ucr.edu
 
-@author: Todd Lenz, tlenz001@ucr.edu
-
-Generates coverage tracks for all genes in a gff file or those in a 
-provided list. Track lengths are normalized with respect to the longest 
-plotted track--i.e. the longest gene will fill the width of the figure 
-and all other genes are proportionally plotted against it. Control 
-reads (input/IGG) should already be subtracted from the sample data.
-
-Required input arguments:
-1. bed--BED file(s) containing genome-wide per-base coverage. 
-   To generage this file from a BAM file:
-   bedtools genomecov -d -ibam ${i}_sorted.bam > ${i}_sorted.bed
-2. gff--Standard GFF file for genome/organism of interest.
-   (https://www.ensembl.org/info/website/upload/gff.html?redirect=no)
-
-Optional input arguments:
-1. samples--List of sample names to annotate the y-axes of barplots. 
-   List should be the sample length as the list of BED files and plots 
-   will be annotated in the same order as BED files. If no sample 
-   names are given, the BED file names are used without the extension.
-2. output--Directory and name for .pdf file. If no output is given, 
-   the output is output.pdf with the directory of the first BED input.
-3. resolution--Integer indicating the binning resolution (default = 10).
-4. gene_list--List of genes to plot, separated by spaces, commas, 
-   newlines, or tabs. Genes will be extracted from the provided GFF 
-   file.
-5. normalization--To normalize data in BED files so that samples can be 
-   directly compared, indicate a method for normalization. Data can be 
-   normalized using counts-per-million (CPM). More methods will be 
-   added in the future.
-6. distance--Integer indicating length of 5' and 3' regions to plot. By 
-   default, only the coding region is used.
+Generates coverage tracks for all genes in a gff file or those in a
+provided list. Track lengths are normalized with respect to the longest
+plotted track--i.e. the longest gene will fill the width of the figure
+and all other genes are proportionally plotted against it.
 """
 
 

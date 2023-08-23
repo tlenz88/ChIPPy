@@ -41,6 +41,8 @@ Any genome can be used as long as a properly formatted '.fasta' file is provided
 
 The user may want to download IGV because a '.wig' file will be generated for easier visualization in the IGV genome browser.
 
+Additional scripts used to automate plotting are available to the user in the ```utils``` folder if a different pipeline or tools were used to perform ChIP-seq analysis.
+
 ## How do I use it?
 
 Brief description of input arguments via help message:

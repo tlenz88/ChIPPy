@@ -1,47 +1,14 @@
 #!/usr/bin/env python
+
 """
-Created June 13, 2022
-Updated August 8, 2023
+Created: June 13, 2022
+Updated: August 23, 2023
+Author(s): Todd Lenz, tlenz001@ucr.edu
 
-@author: Todd Lenz, tlenz001@ucr.edu
-
-Plots genomewide coverage for ChIP-seq data. Track lengths are 
-normalized with respect to the longest chromosome--i.e. the longest 
-chromosome will fill the width of the figure and all other chromosomes 
-are proportionally plotted against it. Control reads (input/IGG) should 
-already be subtracted from the sample data.
-
-Required input arguments:
-1. bed--BED file(s) containing genome-wide per-base coverage. 
-   To generage this file from a BAM file:
-   bedtools genomecov -d -ibam ${i}_sorted.bam > ${i}_sorted.bed
-
-Optional input arguments:
-1. gff--Standard GFF file for genome/organism of interest.
-   (https://www.ensembl.org/info/website/upload/gff.html?redirect=no)
-2. samples--List of sample names to annotate the y-axes of barplots. 
-   List should be the sample length as the list of BED files and plots 
-   will be annotated in the same order as BED files. If no sample 
-   names are given, the BED file names are used without the extension.
-3. output--Directory and name for output .pdf file. If no output is 
-   given, the output file is named 'output.pdf' and saved in the 
-   directory of the first BED input.
-4. resolution--Integer indicating the binning resolution (default = 10).
-5. centromeres--Tab-delimited file containing centromere coordinates 
-   for each chromosome. File format:
-   chromosome_name    start_coordinate    end_coordinate
-   Chromosome names ('chromosome_name') should match the names in the 
-   BED files.
-6. gene_list--List of genes to plot, separated by spaces, commas, 
-   newlines, or tabs. Genes will be extracted from the provided GFF 
-   file.
-7. normalization--To normalize data in BED files so that samples can be 
-   directly compared, indicate a method for normalization. Data can be 
-   normalized using counts-per-million (CPM). More methods will be 
-   added in the future.
-8. ymax--If argument is provided, all chromosome plots will use the 
-   maximum y-value for the entire binned dataset. If not provided, each 
-   chromosome will use the maximum value for that chromosome.
+Plots genomewide coverage for ChIP-seq data. Track lengths are normalized
+with respect to the longest chromosome--i.e. the longest chromosome will
+fill the width of the figure and all other chromosomes are proportionally
+plotted against it.
 """
 
 
