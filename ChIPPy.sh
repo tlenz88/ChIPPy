@@ -209,7 +209,7 @@ fi
 ## Define peak calling algorithm based on treatment antibody. ##
 ################################################################
 if [[ $TREATMENT == "H3K"* || $TREATMENT == "H2AK"* || $TREATMENT == "H2BK"* || $TREATMENT == "H4K"* ]]; then
-    alg="BROAD"
+    alg="--broad"
 else
     alg=""
 fi
@@ -596,7 +596,7 @@ function peak_calling() {
         DIR="$OUTPUT"
     fi
     if [[ -z $TREATMENT || -z $CONTROL ]]; then
-        echo "Can't determine treatment or control samples for peak calling. Rerun using '-t' and '-c' flags."
+        echo "Can't determine treatment or control samples for peak calling. Run using '-t' and '-c' flags."
     else
         echo "Performing peak-calling."
         for i in "$DIR"/*"$TREATMENT"*; do
@@ -615,11 +615,7 @@ function peak_calling() {
                 bn="${treatment/"$TREATMENT"/"$CONTROL"}"
                 control=$(find -L "$(dirname "$bn")" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$CONTROL*")
                 out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$treatment")")")"
-                if [[ "$alg" == "BROAD" ]]; then
-                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B --broad
-                else
-                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B
-                fi
+                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg"
             elif [[ "$sbam" == 0 ]]; then
                 echo "Error: Sorted BAM files are required for the mapping step."
                 exit 1
@@ -628,11 +624,7 @@ function peak_calling() {
             mf=5
             while [[ "$peaks" == 0  && "$mf" -gt 1 ]]; do
                 mf=$((mf - 1))
-                if [[ "$alg" == "BROAD" ]]; then
-                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B --broad --mfold "$mf" 50
-                else
-                    macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B --mfold "$mf" 50
-                fi
+                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg" --mfold "$mf" 50
                 peaks=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*Peak" -and -name "*$TREATMENT*" | wc -l)
             done
             if [[ "$mf" -lt 5 ]]; then

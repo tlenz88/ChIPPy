@@ -1,4 +1,4 @@
-# ChIPpipe
+# ChIPPy
 ##
 This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
 
@@ -22,7 +22,7 @@ Put all input files in a single directory with one folder per sample. The sequen
 
 ## What tools do I need to run the pipeline?
 
-Although the ChIPpipe script automatically downloads most of the necessary software/tools, depending on your system you may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
+Although the ChIPPy script automatically downloads most of the necessary software/tools, depending on your system you may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
 
 - Python3/pip3
 - R
@@ -46,8 +46,8 @@ You may want to download IGV because a '.wig' file will be generated for easier 
 Brief description of input arguments via help message:
 
 ```
-    ChIPpipe.sh --help
-    usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t TREATMENT] [-c CONTROL] [-p THREADS] [-r]
+    ChIPPy.sh --help
+    usage : ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t TREATMENT] [-c CONTROL] [-p THREADS] [-r]
 
     ----------------------------------------------------------------
     Required inputs:
