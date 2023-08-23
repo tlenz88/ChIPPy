@@ -1,6 +1,6 @@
 # ChIPPy
-##
 This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
+##
 
 ## How do I organize my data?
 

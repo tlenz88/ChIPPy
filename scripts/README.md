@@ -1,6 +1,6 @@
 # ChIPPy scripts
-##
 There are several scripts used by ChIPPy to generate input files or intermediate files required by other tools within the pipeline.
+##
 
 ## create_sizes.py
 
