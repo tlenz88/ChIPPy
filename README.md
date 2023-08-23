@@ -3,7 +3,7 @@ This is a complete pipeline for ChIP-seq data analysis. Most of the required pac
 
 ## How do I organize my data?
 
-Put all input files in a single directory with one folder per sample. The sequences can be either single or paired-end and can be gzipped, though this is not a requirement. Paired-end files need to have ```_R1``` and ```_R2``` within the file name to specify forward and reverse reads.
+Put all input files in a single directory with one folder per sample. The sequences can be either single or paired-end and can be gzipped, though this is not a requirement. Paired-end files need to have '_R1' and '_R2' within the file name to specify forward and reverse reads.
 
 ```
     + PATH_TO_DATA
@@ -88,7 +88,7 @@ The following is a more detailed description of input arguments:
 
 - **Required arguments**:
 
-    --input [-i]: Directory containing a folder for each sample. Samples can be single or paired-end, but paired-end sequences need to contain ```_R1``` and ```_R2``` within the file names to determine forward and reverse reads. If starting from a step in the pipeline after alignment the input files are not required to contain ```_R1``` or ```_R2```.
+    --input [-i]: Directory containing a folder for each sample. Samples can be single or paired-end, but paired-end sequences need to contain '_R1' and '_R2' within the file names to determine forward and reverse reads. If starting from a step in the pipeline after alignment the input files are not required to contain '_R1' or '_R2'.
 
     --genome [-g]: Directory containing genome files for the organism of interest. A FASTA file should be present in the directory so that any additional required genome files can be automatically created if missing. All genome files should have the same basename.
 
@@ -102,7 +102,7 @@ The following is a more detailed description of input arguments:
 
     --treatment [-t]: Name or value indicating the targeted antibody. This value is used to differentiate the targeted/treatment samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-t H3K9me3``` would indicate that all samples with ```H3K9me3``` as part of their filename are the targeted/treatment samples. This argument does not have to be valid antibody, but can be any string that is used within the sample names to indicate targeted samples. However, if targeting a histone modification, this argument should at least be the base name of the targeted histone modification, such as ```-t H3K``` or ```-t H2A```, so that peak calling is made more accurate by using the proper peak calling algorithm.
 
-    --control [-c]: Name or value indicating the control or input samples. Like ```--treatment```, this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within the sample names, but will be used to indicate control samples. e.g. ```-c IGG``` would indicate that all samples with ```IGG``` as part of their filename are control samples.
+    --control [-c]: Name or value indicating the control or input samples. Like ```--treatment```, this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within the sample names, but will be used to indicate control samples. e.g. ```-c IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
 
     --proc [-p]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on the users system.
 
@@ -112,31 +112,31 @@ The following is a more detailed description of input arguments:
 
 - **Quality check**:
 
-    FastQC is used to check sequence quality prior to running analysis pipeline. Statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from input ```.fastq(.gz)``` files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
+    FastQC is used to check sequence quality prior to running analysis pipeline. Statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from input '.fastq(.gz)' files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
 
 - **Trimming**:
 
-    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided ```adapters.txt``` file and bases below the quality threshold set by the ```quality [-q]``` argument (default = 30) are removed from the ends of reads. The ```adapters.txt``` file contains common universal adapters for Illumina platforms, but can be modified to fit a specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as ```_trimmed.fastq(.gz)``` files. If using paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs ```_paired``` and ```_unpaired``` files for each input ```.fastq(.gz)``` file. See the [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
+    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the ```quality [-q]``` argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit a specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See the [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
 
 - **Alignment**:
 
-    The ```_trimmed``` and/or ```_paired``` files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the FASTA file provided by the ```genome [-g]``` argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive argument is used to specify the high-sensitivity mode. A single SAM file is output for each aligned sample. See the [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
+    The '_trimmed' and/or '_paired' files are then aligned to the parent genome using Bowtie2. Bowtie2 indexes are generated from the FASTA file provided by the ```genome [-g]``` argument if not already available. To ensure that all possible alignments are identified, the --very-sensitive argument is used to specify the high-sensitivity mode. A single SAM file is output for each aligned sample. See the [project website](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml) for more details.
 
 - **Deduplication**:
 
-    PCR duplicates are removed from the SAM formatted ```_aligned.sam``` genome alignments using ```picard markDuplicates```. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
+    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments using ```picard markDuplicates```. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
 
 - **Filtering**:
 
-    Low-quality reads with Phred score less than 30 are removed from the deduplicated ```_dedup.sam``` files using ```samtools view```. The output BAM format ```_dedup.bam``` file only includes properly paired aligned reads using the flags ```-f 0x02 -F 0x04```. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using ```samtools view```. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags ```-f 0x02 -F 0x04```. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Sorting**:
 
-    Once deduplicated and filtered, the ```_dedup.bam``` files are sorted by coordinate using ```samtools sort``` to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using ```samtools sort``` to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Mapping**:
 
-    To get the depth of coverage at each nucleotide, the ```_sorted.bam``` files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: chromosome name, position and reads. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: chromosome name, position and reads. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Peak calling**:
 
