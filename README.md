@@ -126,11 +126,11 @@ The following is a more detailed description of input arguments:
 
 - **Deduplication**:
 
-    PCR duplicates are removed from the SAM formatted '_aligned.sam' genome alignments using ```picard markDuplicates```. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
+    PCR duplicates are removed from the SAM formatted ```_aligned.sam``` genome alignments using ```picard markDuplicates```. Deduplication metrics are output in a text file. See the [project website](https://broadinstitute.github.io/picard/) for more details.
 
 - **Filtering**:
 
-    Low-quality reads with Phred score less than 30 are removed from the deduplicated '_dedup.sam' files using ```samtools view```. The output BAM format '_dedup.bam' file only includes properly paired aligned reads using the flags '-f 0x02' and '-F 0x04'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Low-quality reads with Phred score less than 30 are removed from the deduplicated ```_dedup.sam``` files using ```samtools view```. The output BAM format ```_dedup.bam``` file only includes properly paired aligned reads using the flags ```-f 0x02 -F 0x04```. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Sorting**:
 
