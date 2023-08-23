@@ -44,8 +44,6 @@ To make installation of ChIPPy dependencies easier, users can create a conda env
 
 3. Activate environment: ```conda activate ChIPPy```
 
-***Usage***: conda env create -f environment.yml 
-
 ## What else do I need?
 
 Any genome can be used as long as a properly formatted FASTA file is provided. For the tools that require a GFF file, ensure that the basename of the file is the same as the FASTA file provided. Any additional files, such as bowtie2 indexes and a chromosome sizes file, will be created automatically if not already present.
