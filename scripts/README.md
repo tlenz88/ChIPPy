@@ -17,7 +17,7 @@ Generates the ChIP-seq metadata file required as input for the DiffBind R packag
 **Usage**:
 ```generate_chip_metadata.py -i INPUT -t TREATMENT -c CONTROL```
 
-**Required arguments**:
+- **Required arguments**:
 
    --input [-i]: Directory containing folders with ChIP-seq data. Each sample folder should contain a coordinate sorted BAM file and the XLS file with called peaks output by MACS.
 
