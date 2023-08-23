@@ -47,7 +47,7 @@ Brief description of input arguments via help message:
 
 ```
     ChIPPy.sh --help
-    usage : ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t TREATMENT] [-c CONTROL] [-p THREADS] [-r]
+    usage: ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t TREATMENT] [-c CONTROL] [-p THREADS] [-r]
 
     ----------------------------------------------------------------
     Required inputs:
