@@ -17,7 +17,7 @@ Plots genomewide coverage for ChIP-seq data. Track lengths are normalized with r
 
     --samples [-s]: List of sample names to annotate the y-axes of barplots. List should be the same length as the list of BED files and plots will be annotated in the same order as BED files. If no sample names are given, the BED file names are used to annotate plots.
 
-    --output [-o]: Directory and name for the output '.pdf' file. If no output is given, the output file is 'chromosome_coverage.pdf' and saved in the directory of the first BED input.
+    --output [-o]: Directory and name for the output PDF file. If no output is given, the output file is ```chromosome_coverage.pdf``` and saved in the directory of the first BED input.
 
     --resolution [-r]: Integer indicating the binning resolution (default = 1000).
 
@@ -43,7 +43,7 @@ Plots genomewide coverage for ChIP-seq data. Track lengths are normalized with r
 
     --samples [-s]: List of sample names to annotate the y-axes of barplots. List should be the same length as the list of BED files and plots will be annotated in the same order as BED files. If no sample names are given, the BED file names are used to annotate plots.
 
-    --output [-o]: Directory and name for the output '.pdf' file. If no output is given, the output file is 'chromosome_coverage.pdf' and saved in the directory of the first BED input.
+    --output [-o]: Directory and name for the output PDF file. If no output is given, the output file is ```chromosome_coverage.pdf``` and saved in the directory of the first BED input.
 
     --resolution [-r]: Integer indicating the binning resolution (default = 10).
 
