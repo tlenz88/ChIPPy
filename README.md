@@ -134,12 +134,12 @@ The following is a more detailed description of input arguments:
 
 - **Sorting**:
 
-    Once deduplicated and filtered, the '_dedup.bam' files are sorted by coordinate using ```samtools sort``` to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    Once deduplicated and filtered, the ```_dedup.bam``` files are sorted by coordinate using ```samtools sort``` to make mapping faster. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Mapping**:
 
-    To get the depth of coverage at each nucleotide, the '_sorted.bam' files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: 'chromosome', 'position' and 'reads'. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
+    To get the depth of coverage at each nucleotide, the ```_sorted.bam``` files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: chromosome name, position and reads. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
 
 - **Peak calling**:
 
-    Peak calling is performed using ```macs2 callpeak```. The ```q-value [-q]``` is set at 0.05 and ```genome size [-g]``` is determined automatically. If the data is paired-end, the format of the input will be set to ```-f BEDPE``` so that the insert size of pairs is used to build fragment pileup. The choice of peak calling algorithm--broad or narrow--is determined by the ```treatment [-t]``` argument. Broad peak calling is performed for histone modifications, whereas narrow peak calling is for transcription factors. If no peaks are called using the default ```--mfold``` parameter, ```macs2 callpeak``` will be repeatedly run using a decreasing lower limit for model building until enough peaks are found to build the shifting model or until the lower limit reaches '1'. See the [github repo](https://github.com/macs3-project/MACS) for more details.
+    Peak calling is performed using ```macs2 callpeak```. The ```q-value [-q]``` is set at 0.05 and ```genome size [-g]``` is determined automatically. If the data is paired-end, the format of the input will be set to ```-f BEDPE``` so that the insert size of pairs is used to build fragment pileup. The choice of peak calling algorithm--broad or narrow--is determined by the ```treatment [-t]``` argument. Broad peak calling is performed for histone modifications, whereas narrow peak calling is for transcription factors. If no peaks are called using the default ```--mfold``` parameter, ```macs2 callpeak``` will be repeatedly run using a decreasing lower limit for model building until enough peaks are found to build the shifting model or until the lower limit reaches 1. See the [github repo](https://github.com/macs3-project/MACS) for more details.
