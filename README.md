@@ -22,7 +22,7 @@ Put all input files in a single directory with one folder per sample. The sequen
 
 ## What tools do I need to run the pipeline?
 
-Although the ChIPPy script automatically downloads most of the necessary software/tools, depending on your system you may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
+Although the ChIPPy script automatically downloads most of the necessary software/tools, depending on the system environment the user may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
 
 - Python3/pip3
 - R
@@ -33,13 +33,13 @@ Although the ChIPPy script automatically downloads most of the necessary softwar
 - Samtools
 - MACS2
 
-Any version of Python3 and R are acceptable, but it is recommended that you use upgrade to the latest versions.
+Any version of Python3 and R are acceptable, but it is recommended that the user upgrade to the latest versions.
 
 ## What else do I need?
 
 Any genome can be used as long as a properly formatted '.fasta' file is provided. For the tools that require a '.gff' file, ensure that the basename of the file is the same as the '.fasta' file provided. Any additional files, such as bowtie2 indexes and a chromosome sizes file, will be created automatically if not already present.
 
-You may want to download IGV because a '.wig' file will be generated for easier visualization in the IGV genome browser.
+The user may want to download IGV because a '.wig' file will be generated for easier visualization in the IGV genome browser.
 
 ## How do I use it?
 
@@ -89,11 +89,11 @@ The following is a more detailed description of input arguments:
 
     --quality [-q]: Integer indicating Phred quality score for trimming low-quality bases at the ends of reads during read pairing and for removing low-quality reads during filtering. Phred score will also be used to approximate filtering settings during alignment.
 
-    --treatment [-t]: Name or value indicating the targeted antibody in your experiment. This value is used to differentiate the targeted/treatment samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-t H3K9me3``` would indicate that all samples with 'H3K9me3' as part of their filename are the targeted/treatment samples. This argument does not have to be valid antibody, but can be any string that is used within your sample names to indicate your targeted samples. However, if you are targeting a histone modification, this argument should at least be the base name of your targeted histone modification, such as ```-t H3K``` or ```-t H2A```, so that peak calling is made more accurate by using the proper peak calling algorithm.
+    --treatment [-t]: Name or value indicating the targeted antibody. This value is used to differentiate the targeted/treatment samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-t H3K9me3``` would indicate that all samples with 'H3K9me3' as part of their filename are the targeted/treatment samples. This argument does not have to be valid antibody, but can be any string that is used within the sample names to indicate targeted samples. However, if targeting a histone modification, this argument should at least be the base name of the targeted histone modification, such as ```-t H3K``` or ```-t H2A```, so that peak calling is made more accurate by using the proper peak calling algorithm.
 
-    --control [-c]: Name or value indicating the control or input samples in your experiment. Like '--antibody1', this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within your sample names, but will be used to indicate your control samples. e.g. ```-c IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
+    --control [-c]: Name or value indicating the control or input samples. Like '--treatment', this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within the sample names, but will be used to indicate control samples. e.g. ```-c IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
 
-    --proc [-p]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on your system.
+    --proc [-p]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on the users system.
 
     --remove [-r]: Removes intermediate files when no longer needed by pipeline to save hard drive space.
 
@@ -101,11 +101,11 @@ The following is a more detailed description of input arguments:
 
 - **Quality check**:
 
-    FastQC is used to check sequence quality prior to running analysis pipeline. Statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from your input '.fastq(.gz)' files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
+    FastQC is used to check sequence quality prior to running analysis pipeline. Statistics such as per base sequence quality, per base sequence content, sequence duplication levels and adapter content are calculated from input '.fastq(.gz)' files. See the [project website](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) for more details.
 
 - **Trimming**:
 
-    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality [-q]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit your specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See the [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
+    Trimmomatic is used to perform initial trimming. Adapter sequences in the provided 'adapters.txt' file and bases below the quality threshold set by the 'quality [-q]' argument (default = 30) are removed from the ends of reads. The 'adapters.txt' file contains common universal adapters for Illumina platforms, but can be modified to fit a specific protocol. Once the reads are trimmed, any reads that are shorter than 25 bp are removed. Single-end sequences are then output as '_trimmed.fastq(.gz)' files. If using paired-end samples, Trimmomatic checks pairing of forward and reverse reads and outputs '_paired' and '_unpaired' files for each input '.fastq(.gz)' file. See the [project website](http://www.usadellab.org/cms/?page=trimmomatic) for more details.
 
 - **Alignment**:
 
