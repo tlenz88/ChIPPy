@@ -1,5 +1,7 @@
 # ChIPPy
-This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
+This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step. 
+
+Although any number of replicates and sample conditions are able to be used as input, the pipeline can currently only handle a single targeted antibody and single control. This is due to the way in which samples are divided when performing differential analysis using [DiffBind](https://bioconductor.org/packages/release/bioc/html/DiffBind.html)
 
 ## How do I organize my data?
 
@@ -23,14 +25,15 @@ Put all input files in a single directory with one folder per sample. The sequen
 
 Although ChIPPy automatically downloads most of the necessary software/tools, depending on the system environment the user may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
 
-- Python3/pip3
-- R
-- FastQC
-- Trimmomatic
-- Bowtie2
-- Picard
-- Samtools
-- MACS2
+- [Python3](https://www.python.org/downloads/)
+- [pip]()
+- [R](https://cran.r-project.org/)
+- [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+- [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+- [Bowtie2](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+- [Picard](https://broadinstitute.github.io/picard/)
+- [Samtools](https://www.htslib.org/doc/samtools.html)
+- [MACS2](https://github.com/macs3-project/MACS)
 
 Any version of Python3 and R are acceptable, but it is recommended that the user upgrade to the latest versions.
 

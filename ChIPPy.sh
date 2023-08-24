@@ -11,11 +11,11 @@ function help {
     echo "usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t treatment] [-c control] [-p THREADS] [-r]"
     echo
     echo "----------------------------------------------------------------"
-    echo "Required inputs:"
+    echo " Required inputs:"
     echo "  -i|--input  INPUT        : Input data folder."
     echo "  -g|--genome GENOME       : Path to genome files."
     echo
-    echo "Optional inputs:"
+    echo " Optional inputs:"
     echo "  -o|--output OUTPUT       : Output folder."
     echo "  -s|--step STEP           : Choose starting step."
     echo "         quality_check     : Initial quality check."
@@ -96,7 +96,17 @@ elif [[ "$OUTPUT" != "" && "$STEP" == "" ]]; then
 elif [[ "$OUTPUT" == "" && "$STEP" == "" ]]; then
     echo "No output folder selected. Files will be saved to input."
     OUTPUT=$INPUT
+elif [[ "$OUTPUT" == "" && "$STEP" != "" ]]; then
+    echo "No output folder selected. Files will be saved to input."
+    OUTPUT=$INPUT
 fi
+
+
+###########################
+## Define logs directory ##
+###########################
+log_dir="$OUTPUT/logs"
+mkdir "$log_dir"
 
 
 ######################################################
@@ -132,6 +142,10 @@ for p in "python3" "fastqc" "bowtie2" "samtools"; do
     fi
 done
 
+if ! command -v pip3 &> /dev/null; then
+    python -m ensurepip --upgrade
+fi
+
 if ! command -v macs2 &> /dev/null; then
     echo "Installing macs2."
     pip3 install macs2
@@ -155,42 +169,6 @@ if ! command -v picard &> /dev/null; then
 fi
 
 
-###########################################
-## Check for all necessary genome files. ##
-###########################################
-if [[ $GENOME != "" ]]; then
-    GENOME="$(readlink -f "$GENOME")"
-    fa=$(find -L "$GENOME" -mindepth 1 -maxdepth 1 \( -name "*.fasta" -o -name "*.fa" \))
-    bname="${fa%%.*}"
-    if [[ ! -e "$bname.1.bt2" ]]; then
-        echo "Creating Bowtie2 indexes."
-        bowtie2-build --threads "$THREADS" "$fa" "$bname"
-    else
-        echo "Bowtie2 indexes detected."
-    fi
-    if [[ ! -e "$bname.chrom.sizes" ]]; then
-        echo "Creating chromosome sizes file."
-        "$SCRIPTS"/create_sizes.py "$fa"
-    else
-        echo "Chromosome sizes file detected."
-    fi
-    if [[ ! -e "$fa.fai" ]]; then
-        echo "Creating FASTA index."
-        samtools faidx "$fa"
-    else
-        echo "FASTA index detected."
-    fi
-    if [[ ! -e "$bname.gff" ]]; then
-        echo "GFF file not detected. Some plots will not be generated."
-    else
-        echo "GFF file detected."
-    fi
-else
-    echo "Error: No input genome (-g) detected."
-    exit 1
-fi
-
-
 #################################################
 ## Define Phred score for quality filtering. ##
 #################################################
@@ -204,6 +182,81 @@ fi
 #################################################
 if [[ -z $THREADS ]]; then
     THREADS=$(($(nproc) / 2))
+fi
+
+
+###########################################
+## Check for all necessary genome files. ##
+###########################################
+if [[ $GENOME != "" ]]; then
+    GENOME="$(readlink -f "$GENOME")"
+    fa=$(find -L "$GENOME" -mindepth 1 -maxdepth 1 \( -name "*.fasta" -o -name "*.fa" \))
+    bname="${fa%%.*}"
+    if [[ $fa == "" && ! -e "$bname.1.bt2" ]]; then
+        echo "Error: No FASTA or Bowtie2 indexes found."
+    elif [[ ! -e "$bname.1.bt2" ]]; then
+        echo "Creating Bowtie2 indexes."
+        bowtie2-build --threads "$THREADS" "$fa" "$bname"
+    else
+        echo "Bowtie2 indexes detected."
+    fi
+    if [[ $fa == "" && ! -e "$bname.chrom.sizes" ]]; then
+        echo "Error: No FASTA found to build chromosome sizes file."
+    elif [[ ! -e "$bname.chrom.sizes" ]]; then
+        echo "Creating chromosome sizes file."
+        "$SCRIPTS"/create_sizes.py "$fa"
+    else
+        echo "Chromosome sizes file detected."
+    fi
+    if [[ $fa == "" && ! -e "$fa.fai" ]]; then
+        echo "Error: No FASTA found to build FASTA index."
+    elif [[ ! -e "$fa.fai" ]]; then
+        echo "Creating FASTA index."
+        samtools faidx "$fa"
+    else
+        echo "FASTA index detected."
+    fi
+    if [[ ! -e "$bname.gff" ]]; then
+        echo "GFF file not detected. Some plots will not be generated."
+    else
+        echo "GFF file detected."
+    fi
+else
+    GENOME="$pipedir"/genomes
+    fa=$(find -L "$GENOME" -mindepth 1 -maxdepth 1 \( -name "*.fasta" -o -name "*.fa" \))
+    bname="${fa%%.*}"
+    if [[ $STEP == "" || $STEP == "quality_check" || $STEP == "trimming" || $STEP == "alignment" ]]; then
+        if [[ $fa == "" && ! -e "$bname.1.bt2" ]]; then
+            echo "Error: No FASTA or Bowtie2 indexes found."
+            exit 1
+        elif [[ ! -e "$bname.1.bt2" ]]; then
+            echo "Creating Bowtie2 indexes."
+            bowtie2-build --threads "$THREADS" "$fa" "$bname"
+        else
+            echo "Bowtie2 indexes detected."
+        fi
+    fi
+    if [[ $fa == "" && ! -e "$bname.chrom.sizes" ]]; then
+        echo "Error: No FASTA or chromosome sizes file found."
+    elif [[ ! -e "$bname.chrom.sizes" ]]; then
+        echo "Creating chromosome sizes file."
+        "$SCRIPTS"/create_sizes.py "$fa"
+    else
+        echo "Chromosome sizes file detected."
+    fi
+    if [[ $fa == "" && ! -e "$fa.fai" ]]; then
+        echo "Error: No FASTA found to build FASTA index."
+    elif [[ ! -e "$fa.fai" ]]; then
+        echo "Creating FASTA index."
+        samtools faidx "$fa"
+    else
+        echo "FASTA index detected."
+    fi
+    if [[ ! -e "$bname.gff" ]]; then
+        echo "Warning: GFF file not detected. Some plots will not be generated."
+    else
+        echo "GFF file detected."
+    fi
 fi
 
 
@@ -249,9 +302,6 @@ fi
 
 if [[ "$STEP" != "" ]]; then
     for s in $STEP; do
-        echo
-        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
-        echo
         for i in "${QUALITY_CHECK[@]}"; do
             if [[ "$i" == "$s" ]]; then
                 fq=$(find -L "$INPUT" -mindepth 2 -maxdepth 2  -name "*.fastq*" -o -name "*.fastq*" | wc -l)
@@ -366,7 +416,9 @@ fi
 ###################################################
 function quality_check() {
     echo "Performing FastQC quality check."
+    echo "----------------------------------------------------------------"
     for i in "$INPUT"/*; do
+        basename "$i"
         fq=$(find -L "$i" -mindepth 1 -maxdepth 1  -name "*.fastq*" -o -name "*.fastq*" | wc -l)
         if [[ "$fq" == 1 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1  -name "*.fastq*" -o -name "*.fastq*" )
@@ -379,8 +431,8 @@ function quality_check() {
         if [[ "$fq" == 2 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R1*")
             fq_r2=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R2*")
-            fastqc -t "$THREADS" "$fq_r1"
-            fastqc -t "$THREADS" "$fq_r2"
+            fastqc -t "$THREADS" "$fq_r1" > "$log_dir/fastqc.log" 2>&1
+            fastqc -t "$THREADS" "$fq_r2" > "$log_dir/fastqc.log" 2>&1
             if [[ "$OUTPUT" != "$INPUT" ]]; then
                 mv "${fq_r1%%.*}"_fastqc.html "$OUTPUT/$(basename "$(dirname "$fq_r1")")/$(basename "${fq_r1%%.*}")_fastqc.html"
                 mv "${fq_r2%%.*}"_fastqc.html "$OUTPUT/$(basename "$(dirname "$fq_r2")")/$(basename "${fq_r2%%.*}")_fastqc.html"
@@ -401,6 +453,7 @@ function trimming() {
         echo
     fi
     echo "Trimming and pairing R1 and R2 reads."
+    echo "----------------------------------------------------------------"
     for i in "$INPUT"/*; do
         basename "$i"
         fq=$(find -L "$i" -mindepth 1 -maxdepth 1  -name "*.fastq*" -o -name "*.fastq*" | wc -l)
@@ -411,9 +464,9 @@ function trimming() {
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*.fastq*" -o -name "*.fq*" )
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
             if ! command -v trimmomatic &> /dev/null; then
-                java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+                java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
             else
-                trimmomatic SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+                trimmomatic SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
             fi
         elif [[ "$fq" == 2 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R1*")
@@ -421,9 +474,9 @@ function trimming() {
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
             out_r2="$OUTPUT"/"$(basename "$(dirname "$fq_r2")")"/"$(basename "${fq_r2%%.*}")"
             if ! command -v trimmomatic &> /dev/null; then
-                java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+                java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
             else
-                trimmomatic PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10
+                trimmomatic PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
             fi
         elif [[ "$fq" == 0 ]]; then
             echo "Error: Input files must be '.fastq(.gz)'."
@@ -441,7 +494,12 @@ function alignment() {
     else
         DIR="$OUTPUT"
     fi
+    if [[ ! -e "$bname.1.bt2" ]]; then
+        echo "Error: No Bowtie2 indexes found."
+        exit 1
+    fi
     echo "Aligning reads to the genome."
+    echo "----------------------------------------------------------------"
     for i in "$DIR"/*; do
         basename "$i"
         tfq=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_trimmed.fastq*" -o -name "*_trimmed.fq*" -o -name "*_paired.fastq*" -o -name "*_paired.fq*"  | wc -l)
@@ -450,7 +508,7 @@ function alignment() {
         if [[ $tfq == 1 ]]; then
             tfq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_trimmed.fastq*" -o -name "*_trimmed.fq*" )
             out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$tfq_r1")")")/$(basename "${tfq_r1%_*}")"
-            bowtie2 -x "$bidx" -1 "$tfq_r1" -S "${out}_aligned.sam" -p "$THREADS" --very-sensitive
+            bowtie2 -x "$bidx" -1 "$tfq_r1" -S "${out}_aligned.sam" -p "$THREADS" --very-sensitive > "$log_dir/alignment.log" 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$i"/*_trimmed.fastq*
             fi
@@ -459,7 +517,7 @@ function alignment() {
             tfq_r2=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*_paired.fastq*" -o -name "*_paired.fq*" \) -and -name "*_R2*")
             out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$tfq_r1")")")/$(basename "${tfq_r1%_*}")"
             asam="${out/_R1/}"
-            bowtie2 -x "$bidx" -1 "$tfq_r1" -2 "$tfq_r2" -S "${asam}_aligned.sam" -p "$THREADS" --very-sensitive
+            bowtie2 -x "$bidx" -1 "$tfq_r1" -2 "$tfq_r2" -S "${asam}_aligned.sam" -p "$THREADS" --very-sensitive > "$log_dir/alignment.log" 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$i"/*_paired.fastq* "$i"/*_unpaired.fastq*
             fi
@@ -480,6 +538,7 @@ function deduplication() {
         DIR="$OUTPUT"
     fi
     echo "Removing PCR duplicates."
+    echo "----------------------------------------------------------------"
     for i in "$DIR"/*; do
         basename "$i"
         sam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_aligned.sam" | wc -l)
@@ -490,9 +549,9 @@ function deduplication() {
             asam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_aligned.sam")
             dsam="$OUTPUT/$(basename "$(dirname "$(readlink -f "$asam")")")/$(basename "${asam%_*}")"
             if ! command -v picard &> /dev/null; then
-                java -jar "$ptjar" MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname
+                java -jar "$ptjar" MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname > "$log_dir/deduplication.log" 2>&1
             else
-                picard MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname
+                picard MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname > "$log_dir/deduplication.log" 2>&1
             fi
             if [[ "$REMOVE" == true ]]; then
                 rm "$asam"
@@ -514,13 +573,14 @@ function filtering() {
         DIR="$OUTPUT"
     fi
     echo "Filtering low quality reads."
+    echo "----------------------------------------------------------------"
     for i in "$DIR"/*; do
         basename "$i"
         sam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.sam" | wc -l)
         if [[ "$sam" == 1 ]]; then
             dsam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.sam")
             dbam="$OUTPUT/$(basename "$(dirname "$(readlink -f "$dsam")")")/$(basename "${dsam%%.*}")"
-            samtools view -@ "$THREADS" -q "$QUALITY" -f 0X02 -F 0X04 -b "$dsam" -o "${dbam}.bam"
+            samtools view -@ "$THREADS" -q "$QUALITY" -f 0X02 -F 0X04 -b "$dsam" -o "${dbam}.bam" > "$log_dir/filtering.log" 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$dsam"
             fi
@@ -540,14 +600,15 @@ function sorting() {
     else
         DIR="$OUTPUT"
     fi
-    echo "Sorting reads"
+    echo "Sorting reads."
+    echo "----------------------------------------------------------------"
     for i in "$DIR"/*; do
         basename "$i"
         bam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.bam" | wc -l)
         if [[ "$bam" == 1 ]]; then
             dbam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.bam")
             sbam="$OUTPUT/$(basename "$(dirname "$(readlink -f "$dbam")")")/$(basename "${dbam%_*}")"
-            samtools sort -@ "$THREADS" "$dbam" -o "${sbam}_sorted.bam"
+            samtools sort -@ "$THREADS" "$dbam" -o "${sbam}_sorted.bam" > "$log_dir/sorting.log" 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$dbam"
             fi
@@ -558,6 +619,7 @@ function sorting() {
     done
     echo
     echo "Performing quality check."
+    echo "----------------------------------------------------------------"
     for i in "$OUTPUT"/*; do
         basename "$i"
         bam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" | wc -l)
@@ -569,6 +631,7 @@ function sorting() {
     done
     echo
     echo "Indexing reads."
+    echo "----------------------------------------------------------------"
     for i in "$OUTPUT"/*; do
         basename "$i"
         bam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" | wc -l)
@@ -590,13 +653,14 @@ function mapping() {
         DIR="$OUTPUT"
     fi
     echo "Calculating genome-wide coverage at each base pair."
+    echo "----------------------------------------------------------------"
     for i in "$DIR"/*; do
         basename "$i"
         bam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" | wc -l)
         if [[ "$bam" == 1 ]]; then
             sbam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam")
             sbed="$OUTPUT/$(basename "$(dirname "$(readlink -f "$sbam")")")/$(basename "${sbam%%.*}")"
-            samtools depth -a -o "${sbed}.bed" "$sbam"
+            samtools depth -a -o "${sbed}.bed" "$sbam" > "$log_dir/mapping.log" 2>&1
         elif [[ "$bam" == 0 ]]; then
             echo "Error: Sorted BAM files are required for the mapping step."
             exit 1
@@ -614,9 +678,10 @@ function peak_calling() {
         DIR="$OUTPUT"
     fi
     if [[ -z $TREATMENT || -z $CONTROL ]]; then
-        echo "Can't determine treatment or control samples for peak calling. Run using '-t' and '-c' flags."
+        echo "Can't determine treatment or control samples for peak calling step. Run using '-t' and '-c' flags."
     else
         echo "Performing peak-calling."
+        echo "----------------------------------------------------------------"
         for i in "$DIR"/*"$TREATMENT"*; do
             basename "$i"
             sbam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$TREATMENT*" | wc -l)
@@ -633,7 +698,7 @@ function peak_calling() {
                 bn="${treatment/"$TREATMENT"/"$CONTROL"}"
                 control=$(find -L "$(dirname "$bn")" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$CONTROL*")
                 out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$treatment")")")"
-                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg"
+                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg" > "$log_dir/peak_calling.log" 2>&1
             elif [[ "$sbam" == 0 ]]; then
                 echo "Error: Sorted BAM files are required for the mapping step."
                 exit 1
@@ -642,7 +707,7 @@ function peak_calling() {
             mf=5
             while [[ "$peaks" == 0  && "$mf" -gt 1 ]]; do
                 mf=$((mf - 1))
-                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg" --mfold "$mf" 50
+                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg" --mfold "$mf" 50 > "$log_dir/peak_calling.log" 2>&1
                 peaks=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*Peak" -and -name "*$TREATMENT*" | wc -l)
             done
             if [[ "$mf" -lt 5 ]]; then
