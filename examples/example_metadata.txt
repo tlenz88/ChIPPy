@@ -1,0 +1,9 @@
+SampleID	Factor	Condition	Replicate	bamReads	ControlID	bamControl
+KO_rep1_H3K9me3	H3K9me3	KO	1	output/output_files/KO_rep1_H3K9me3/KO_rep1_H3K9me3_sorted.bam	KO_rep1_input	output/output_files/KO_rep1_input/KO_rep1_input_sorted.bam
+KO_rep2_H3K9me3	H3K9me3	KO	2	output/output_files/KO_rep2_H3K9me3/KO_rep2_H3K9me3_sorted.bam	KO_rep2_input	output/output_files/KO_rep2_input/KO_rep2_input_sorted.bam
+KO_rep1_H3K27ac	H3K27ac	KO	1	output/output_files/KO_rep1_H3K27ac/KO_rep1_H3K27ac_sorted.bam	KO_rep1_input	output/output_files/KO_rep1_input/KO_rep1_input_sorted.bam
+KO_rep2_H3K27ac	H3K27ac	KO	2	output/output_files/KO_rep2_H3K27ac/KO_rep2_H3K27ac_sorted.bam	KO_rep2_input	output/output_files/KO_rep2_input/KO_rep2_input_sorted.bam
+WT_rep1_H3K9me3	H3K9me3	WT	1	output/output_files/WT_rep1_H3K9me3/WT_rep1_H3K9me3_sorted.bam	WT_rep1_input	output/output_files/WT_rep1_input/WT_rep1_input_sorted.bam
+WT_rep2_H3K9me3	H3K9me3	WT	2	output/output_files/WT_rep2_H3K9me3/WT_rep2_H3K9me3_sorted.bam	WT_rep2_input	output/output_files/WT_rep2_input/WT_rep2_input_sorted.bam
+WT_rep1_H3K27ac	H3K27ac	WT	1	output/output_files/WT_rep1_H3K27ac/WT_rep1_H3K27ac_sorted.bam	WT_rep1_input	output/output_files/WT_rep1_input/WT_rep1_input_sorted.bam
+WT_rep2_H3K27ac	H3K27ac	WT	2	output/output_files/WT_rep2_H3K27ac/WT_rep2_H3K27ac_sorted.bam	WT_rep2_input	output/output_files/WT_rep2_input/WT_rep2_input_sorted.bam

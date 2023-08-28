@@ -1,14 +1,14 @@
 #!/bin/bash
 
 ## Created: June 13, 2022
-## Updated: August 17, 2023
+## Updated: August 25, 2023
 ## Author(s): Todd Lenz, tlenz001@ucr.edu
 ## ChIPPy: A complete pipeline for ChIP-seq data analysis and plotting.
 
 
 function help {
-    echo "ChIPpipe.sh --help"
-    echo "usage : ChIPpipe.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t treatment] [-c control] [-p THREADS] [-r]"
+    echo "ChIPPy.sh --help"
+    echo "usage : ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r] [-h]"
     echo
     echo "----------------------------------------------------------------"
     echo " Required inputs:"
@@ -26,9 +26,7 @@ function help {
     echo "               sorting     : Sorting reads by coordinate."
     echo "               mapping     : Mapping reads to each base pair"
     echo "  -q|--quality QUALITY     : Phred quality score for filtering."
-    echo "  -t|--treatment TREATMENT : Target antibody."
-    echo "  -c|--control CONTROL     : Control antibody (IGG) or input."
-    echo "  -p|--proc THREADS        : Processor threads."
+    echo "  -t|--threads THREADS     : Processor threads."
     echo "  -r|--remove REMOVE       : Remove intermediate files."
     echo "  -h|--help HELP           : Show help message."
     echo "----------------------------------------------------------------"
@@ -48,7 +46,7 @@ for arg in "$@"; do
         "--quality") set -- "$@" "-q" ;;
         "--treatment") set -- "$@" "-t" ;;
         "--control") set -- "$@" "-c" ;;
-        "--proc") set -- "$@" "-p" ;;
+        "--threads") set -- "$@" "-p" ;;
         "--remove") set -- "$@" "-r" ;;
         "--help") set -- "$@" "-h" ;;
         *) set -- "$@" "$arg"
@@ -58,16 +56,14 @@ done
 pipedir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 SCRIPTS="$pipedir"/scripts
 
-while getopts ":i:g:o:s:q:t:c:p:r:h:" opt; do
+while getopts ":i:g:o:s:q:t:r:h:" opt; do
     case $opt in
         i) INPUT="$OPTARG";;
         g) GENOME="$OPTARG";;
         o) OUTPUT="$OPTARG";;
         s) STEP="$OPTARG";;
         q) QUALITY="$OPTARG";;
-        t) TREATMENT="$OPTARG";;
-        c) CONTROL="$OPTARG";;
-        p) THREADS="$OPTARG";;
+        t) THREADS="$OPTARG";;
         r) REMOVE=true;;
         h) help;;
         *) echo "Error: '$OPTARG' is an invalid argument."
@@ -83,30 +79,33 @@ if [[ -e "$OUTPUT" && "$STEP" == "" ]]; then
     read -r ans
     if [[ "$ans" == "y" ]]; then
         rm -rf "$OUTPUT"
-        mkdir "$OUTPUT"
+        mkdir "$OUTPUT"/output_files
         for i in "$INPUT"/*; do
-            mkdir "$OUTPUT"/"$(basename "$i")"
+            mkdir "$OUTPUT"/output_files/"$(basename "$i")"
         done
     fi
+elif [[ -e "$OUTPUT" && "$STEP" != "" ]]; then
+    OUTPUT="$OUTPUT"/output_files
 elif [[ "$OUTPUT" != "" && "$STEP" == "" ]]; then
-    mkdir "$OUTPUT"
+    mkdir "$OUTPUT"/output_files
     for i in "$INPUT"/*; do
-        mkdir "$OUTPUT"/"$(basename "$i")"
+        mkdir "$OUTPUT"/output_files/"$(basename "$i")"
     done
-elif [[ "$OUTPUT" == "" && "$STEP" == "" ]]; then
-    echo "No output folder selected. Files will be saved to input."
-    OUTPUT=$INPUT
-elif [[ "$OUTPUT" == "" && "$STEP" != "" ]]; then
-    echo "No output folder selected. Files will be saved to input."
-    OUTPUT=$INPUT
+elif [[ "$OUTPUT" == "" ]]; then
+    echo "No output folder selected. Files will be saved to 'ChIPPy_output'."
+    OUTPUT="$(dirname "$INPUT")"/ChIPPy_output/output_files
 fi
 
 
 ###########################
 ## Define logs directory ##
 ###########################
-log_dir="$OUTPUT/logs"
-mkdir "$log_dir"
+if [[ ! -e "$(dirname "$OUTPUT")"/logs ]]; then
+    log_dir="$(dirname "$OUTPUT")"/logs
+    mkdir "$log_dir"
+else
+    log_dir="$(dirname "$OUTPUT")"/logs
+fi
 
 
 ######################################################
@@ -145,18 +144,6 @@ done
 if ! command -v pip3 &> /dev/null; then
     python -m ensurepip --upgrade
 fi
-
-if ! command -v macs2 &> /dev/null; then
-    echo "Installing macs2."
-    pip3 install macs2
-fi
-
-for pkg in "matplotlib" "numpy" "pandas"; do
-    if ! python3 -c "import $pkg" &> /dev/null; then
-        echo "Installing $pkg."
-        pip3 install "$pkg"
-    fi
-done
 
 if ! command -v picard &> /dev/null; then
     if [[ $(find -L "$SCRIPTS" -mindepth 1 -maxdepth 4 -name "picard.jar" | wc -l) == 0 ]]; then
@@ -200,14 +187,6 @@ if [[ $GENOME != "" ]]; then
     else
         echo "Bowtie2 indexes detected."
     fi
-    if [[ $fa == "" && ! -e "$bname.chrom.sizes" ]]; then
-        echo "Error: No FASTA found to build chromosome sizes file."
-    elif [[ ! -e "$bname.chrom.sizes" ]]; then
-        echo "Creating chromosome sizes file."
-        "$SCRIPTS"/create_sizes.py "$fa"
-    else
-        echo "Chromosome sizes file detected."
-    fi
     if [[ $fa == "" && ! -e "$fa.fai" ]]; then
         echo "Error: No FASTA found to build FASTA index."
     elif [[ ! -e "$fa.fai" ]]; then
@@ -215,11 +194,6 @@ if [[ $GENOME != "" ]]; then
         samtools faidx "$fa"
     else
         echo "FASTA index detected."
-    fi
-    if [[ ! -e "$bname.gff" ]]; then
-        echo "GFF file not detected. Some plots will not be generated."
-    else
-        echo "GFF file detected."
     fi
 else
     GENOME="$pipedir"/genomes
@@ -236,14 +210,6 @@ else
             echo "Bowtie2 indexes detected."
         fi
     fi
-    if [[ $fa == "" && ! -e "$bname.chrom.sizes" ]]; then
-        echo "Error: No FASTA or chromosome sizes file found."
-    elif [[ ! -e "$bname.chrom.sizes" ]]; then
-        echo "Creating chromosome sizes file."
-        "$SCRIPTS"/create_sizes.py "$fa"
-    else
-        echo "Chromosome sizes file detected."
-    fi
     if [[ $fa == "" && ! -e "$fa.fai" ]]; then
         echo "Error: No FASTA found to build FASTA index."
     elif [[ ! -e "$fa.fai" ]]; then
@@ -252,21 +218,6 @@ else
     else
         echo "FASTA index detected."
     fi
-    if [[ ! -e "$bname.gff" ]]; then
-        echo "Warning: GFF file not detected. Some plots will not be generated."
-    else
-        echo "GFF file detected."
-    fi
-fi
-
-
-################################################################
-## Define peak calling algorithm based on treatment antibody. ##
-################################################################
-if [[ $TREATMENT == "H3K"* || $TREATMENT == "H2AK"* || $TREATMENT == "H2BK"* || $TREATMENT == "H4K"* ]]; then
-    alg="--broad"
-else
-    alg=""
 fi
 
 
@@ -274,7 +225,7 @@ fi
 ## Check starting step and required files option. ##
 ####################################################
 STEP="${STEP/^ //}"
-ALL_STEPS=("quality_check" "trimming" "alignment" "deduplication" "filtering" "sorting" "mapping" "peak_calling")
+ALL_STEPS=("quality_check" "trimming" "alignment" "deduplication" "filtering" "sorting" "mapping")
 QUALITY_CHECK="quality_check"
 TRIMMING="trimming"
 ALIGNMENT="alignment"
@@ -282,7 +233,6 @@ DEDUPLICATION="deduplication"
 FILTERING="filtering"
 SORTING="sorting"
 MAPPING="mapping"
-PEAK_CALLING="peak_calling"
 
 if [[ $STEP != "" ]]; then
     case $STEP in
@@ -293,7 +243,6 @@ if [[ $STEP != "" ]]; then
         "filtering") FILTERED_STEPS=("${ALL_STEPS[@]:4}");;
         "sorting") FILTERED_STEPS=("${ALL_STEPS[@]:5}");;
         "mapping") FILTERED_STEPS=("${ALL_STEPS[@]:6}");;
-        "peak_calling") FILTERED_STEPS=("${ALL_STEPS[@]:7}");;
         *) echo "Invalid step: $STEP"; exit 1;;
     esac
 else
@@ -394,15 +343,6 @@ if [[ "$STEP" != "" ]]; then
                 fi
             fi
         done
-        for i in "${PEAK_CALLING[@]}"; do
-            if [[ "$i" == "$s" ]]; then 
-                sbam=$(find -L "$INPUT" -mindepth 2 -maxdepth 4 -name "*_sorted.bam" | wc -l)
-                if [[ "$sbam" == 0 ]]; then
-                    echo "Error: Sorted BAM files are required to start the pipeline at the peak_calling step."
-                    exit 1
-                fi
-            fi
-        done
     done
 else
     echo
@@ -431,8 +371,8 @@ function quality_check() {
         if [[ "$fq" == 2 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R1*")
             fq_r2=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R2*")
-            fastqc -t "$THREADS" "$fq_r1" > "$log_dir/fastqc.log" 2>&1
-            fastqc -t "$THREADS" "$fq_r2" > "$log_dir/fastqc.log" 2>&1
+            fastqc -t "$THREADS" "$fq_r1" >> "$log_dir"/fastqc.log 2>&1
+            fastqc -t "$THREADS" "$fq_r2" >> "$log_dir"/fastqc.log 2>&1
             if [[ "$OUTPUT" != "$INPUT" ]]; then
                 mv "${fq_r1%%.*}"_fastqc.html "$OUTPUT/$(basename "$(dirname "$fq_r1")")/$(basename "${fq_r1%%.*}")_fastqc.html"
                 mv "${fq_r2%%.*}"_fastqc.html "$OUTPUT/$(basename "$(dirname "$fq_r2")")/$(basename "${fq_r2%%.*}")_fastqc.html"
@@ -464,9 +404,9 @@ function trimming() {
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*.fastq*" -o -name "*.fq*" )
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
             if ! command -v trimmomatic &> /dev/null; then
-                java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
+                java -jar "$tmjar" SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 >> "$log_dir"/trimming.log 2>&1
             else
-                trimmomatic SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
+                trimmomatic SE -threads "$THREADS" "$fq_r1" "${out_r1}_trimmed.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 >> "$log_dir"/trimming.log 2>&1
             fi
         elif [[ "$fq" == 2 ]]; then
             fq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*.fastq*" -o -name "*.fq*" \) -and -name "*_R1*")
@@ -474,9 +414,9 @@ function trimming() {
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
             out_r2="$OUTPUT"/"$(basename "$(dirname "$fq_r2")")"/"$(basename "${fq_r2%%.*}")"
             if ! command -v trimmomatic &> /dev/null; then
-                java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
+                java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 >> "$log_dir"/trimming.log 2>&1
             else
-                trimmomatic PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 > "$log_dir/trimming.log" 2>&1
+                trimmomatic PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 >> "$log_dir"/trimming.log 2>&1
             fi
         elif [[ "$fq" == 0 ]]; then
             echo "Error: Input files must be '.fastq(.gz)'."
@@ -508,7 +448,7 @@ function alignment() {
         if [[ $tfq == 1 ]]; then
             tfq_r1=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_trimmed.fastq*" -o -name "*_trimmed.fq*" )
             out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$tfq_r1")")")/$(basename "${tfq_r1%_*}")"
-            bowtie2 -x "$bidx" -1 "$tfq_r1" -S "${out}_aligned.sam" -p "$THREADS" --very-sensitive > "$log_dir/alignment.log" 2>&1
+            bowtie2 -x "$bidx" -1 "$tfq_r1" -S "${out}_aligned.sam" -p "$THREADS" --very-sensitive >> "$log_dir"/alignment.log 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$i"/*_trimmed.fastq*
             fi
@@ -517,7 +457,7 @@ function alignment() {
             tfq_r2=$(find -L "$i" -mindepth 1 -maxdepth 1 \( -name "*_paired.fastq*" -o -name "*_paired.fq*" \) -and -name "*_R2*")
             out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$tfq_r1")")")/$(basename "${tfq_r1%_*}")"
             asam="${out/_R1/}"
-            bowtie2 -x "$bidx" -1 "$tfq_r1" -2 "$tfq_r2" -S "${asam}_aligned.sam" -p "$THREADS" --very-sensitive > "$log_dir/alignment.log" 2>&1
+            bowtie2 -x "$bidx" -1 "$tfq_r1" -2 "$tfq_r2" -S "${asam}_aligned.sam" -p "$THREADS" --very-sensitive >> "$log_dir"/alignment.log 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$i"/*_paired.fastq* "$i"/*_unpaired.fastq*
             fi
@@ -549,9 +489,9 @@ function deduplication() {
             asam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_aligned.sam")
             dsam="$OUTPUT/$(basename "$(dirname "$(readlink -f "$asam")")")/$(basename "${asam%_*}")"
             if ! command -v picard &> /dev/null; then
-                java -jar "$ptjar" MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname > "$log_dir/deduplication.log" 2>&1
+                java -jar "$ptjar" MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname >> "$log_dir"/deduplication.log 2>&1
             else
-                picard MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname > "$log_dir/deduplication.log" 2>&1
+                picard MarkDuplicates -I "$asam" -O "${dsam}_dedup.sam" -M "${dsam}_metrics.txt" -ASO queryname >> "$log_dir"/deduplication.log 2>&1
             fi
             if [[ "$REMOVE" == true ]]; then
                 rm "$asam"
@@ -580,7 +520,7 @@ function filtering() {
         if [[ "$sam" == 1 ]]; then
             dsam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.sam")
             dbam="$OUTPUT/$(basename "$(dirname "$(readlink -f "$dsam")")")/$(basename "${dsam%%.*}")"
-            samtools view -@ "$THREADS" -q "$QUALITY" -f 0X02 -F 0X04 -b "$dsam" -o "${dbam}.bam" > "$log_dir/filtering.log" 2>&1
+            samtools view -@ "$THREADS" -q "$QUALITY" -f 0X02 -F 0X04 -b "$dsam" -o "${dbam}.bam" >> "$log_dir"/filtering.log 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$dsam"
             fi
@@ -608,7 +548,7 @@ function sorting() {
         if [[ "$bam" == 1 ]]; then
             dbam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_dedup.bam")
             sbam="$OUTPUT/$(basename "$(dirname "$(readlink -f "$dbam")")")/$(basename "${dbam%_*}")"
-            samtools sort -@ "$THREADS" "$dbam" -o "${sbam}_sorted.bam" > "$log_dir/sorting.log" 2>&1
+            samtools sort -@ "$THREADS" "$dbam" -o "${sbam}_sorted.bam" >> "$log_dir"/sorting.log 2>&1
             if [[ "$REMOVE" == true ]]; then
                 rm "$dbam"
             fi
@@ -660,62 +600,12 @@ function mapping() {
         if [[ "$bam" == 1 ]]; then
             sbam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam")
             sbed="$OUTPUT/$(basename "$(dirname "$(readlink -f "$sbam")")")/$(basename "${sbam%%.*}")"
-            samtools depth -a -o "${sbed}.bed" "$sbam" > "$log_dir/mapping.log" 2>&1
+            samtools depth -a -o "${sbed}.bed" "$sbam" >> "$log_dir"/mapping.log 2>&1
         elif [[ "$bam" == 0 ]]; then
             echo "Error: Sorted BAM files are required for the mapping step."
             exit 1
         fi
     done
-    echo
-}
-
-function peak_calling() {
-    if [[ "$STEP" == "peak_calling" ]]; then
-        echo "Starting ChIP-seq analysis pipeline at the $STEP step."
-        echo
-        DIR="$INPUT"
-    else
-        DIR="$OUTPUT"
-    fi
-    if [[ -z $TREATMENT || -z $CONTROL ]]; then
-        echo "Can't determine treatment or control samples for peak calling step. Run using '-t' and '-c' flags."
-    else
-        echo "Performing peak-calling."
-        echo "----------------------------------------------------------------"
-        for i in "$DIR"/*"$TREATMENT"*; do
-            basename "$i"
-            sbam=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$TREATMENT*" | wc -l)
-            if [[ "$sbam" == 1 ]]; then
-                treatment=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$TREATMENT*")
-                fq=$(samtools view -f 0x1 "$treatment" | wc -l)
-                if [[ "$fq" -gt 0 ]]; then
-                    bam="BAMPE"
-                else
-                    bam="BAM"
-                fi
-                npeaks="$(basename "${treatment%_*}")"
-                gsize=$(awk '{sum+=$2} END {print sum}' "$fa".fai)
-                bn="${treatment/"$TREATMENT"/"$CONTROL"}"
-                control=$(find -L "$(dirname "$bn")" -mindepth 1 -maxdepth 1 -name "*_sorted.bam" -and -name "*$CONTROL*")
-                out="$OUTPUT/$(basename "$(dirname "$(readlink -f "$treatment")")")"
-                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg" > "$log_dir/peak_calling.log" 2>&1
-            elif [[ "$sbam" == 0 ]]; then
-                echo "Error: Sorted BAM files are required for the mapping step."
-                exit 1
-            fi
-            peaks=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*Peak" -and -name "*$TREATMENT*" | wc -l)
-            mf=5
-            while [[ "$peaks" == 0  && "$mf" -gt 1 ]]; do
-                mf=$((mf - 1))
-                macs2 callpeak -t "$treatment" -c "$control" -f "$bam" -g "$gsize" -n "$npeaks" -q 0.05 --outdir "$out" -B "$alg" --mfold "$mf" 50 > "$log_dir/peak_calling.log" 2>&1
-                peaks=$(find -L "$i" -mindepth 1 -maxdepth 1 -name "*Peak" -and -name "*$TREATMENT*" | wc -l)
-            done
-            if [[ "$mf" -lt 5 ]]; then
-                echo
-                echo "Lower limit set to $mf for model building. Record this value for future reference when reporting your analysis methods."
-            fi
-        done
-    fi
     echo
 }
 

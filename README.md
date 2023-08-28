@@ -1,14 +1,12 @@
 # ChIPPy
 This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step. 
 
-Although any number of replicates and sample conditions are able to be used as input, the pipeline can currently only handle a single targeted antibody and single control. This is due to the way in which samples are divided when performing differential analysis using [DiffBind](https://bioconductor.org/packages/release/bioc/html/DiffBind.html)
-
 ## How do I organize my data?
 
-Put all input files in a single directory with one folder per sample. The sequences can be either single or paired-end and can be gzipped, though this is not a requirement. Paired-end files need to have '_R1' and '_R2' within the file name to specify forward and reverse reads.
+Put all input files in a single directory with one folder per sample. The sequences can be either single or paired-end and can be gzipped, though this is not a requirement. Paired-end files need to have '_R1' and '_R2' within the file names to specify forward and reverse reads.
 
 ```
-    + PATH_TO_DATA
+    + PATH_TO_INPUT
         + sample1
             ++ sample1_R1.fastq.gz
             ++ sample1_R2.fastq.gz
@@ -26,16 +24,12 @@ Put all input files in a single directory with one folder per sample. The sequen
 Although ChIPPy automatically downloads most of the necessary software/tools, depending on the system environment the user may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
 
 - [Python3](https://www.python.org/downloads/)
-- [pip]()
-- [R](https://cran.r-project.org/)
+- [pip](https://pip.pypa.io/en/stable/installation/)
 - [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 - [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
 - [Bowtie2](https://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 - [Picard](https://broadinstitute.github.io/picard/)
 - [Samtools](https://www.htslib.org/doc/samtools.html)
-- [MACS2](https://github.com/macs3-project/MACS)
-
-Any version of Python3 and R are acceptable, but it is recommended that the user upgrade to the latest versions.
 
 ### Conda environment installation
 
@@ -49,9 +43,9 @@ To make installation of ChIPPy dependencies easier, users can create a conda env
 
 ## What else do I need?
 
-Any genome can be used as long as a properly formatted FASTA file is provided. For the tools that require a GFF file, ensure that the basename of the file is the same as the FASTA file provided. Any additional files, such as bowtie2 indexes and a chromosome sizes file, will be created automatically if not already present.
+Any genome can be used as long as a properly formatted FASTA file is provided. Any additional files, such as bowtie2 indexes, will be created automatically if not already present.
 
-The user may want to download IGV because a WIG file will be generated for easier visualization in the IGV genome browser.
+The user may want to download [IGV](https://igv.org/) because a WIG file will be generated for easier visualization in the IGV genome browser.
 
 Additional scripts used to automate plotting are available to the user in the ```utils``` folder if a different pipeline or tools were used to perform ChIP-seq analysis.
 
@@ -61,7 +55,7 @@ Brief description of input arguments via help message:
 
 ```
     ChIPPy.sh --help
-    usage: ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t TREATMENT] [-c CONTROL] [-p THREADS] [-r]
+    usage: ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r]
 
     ----------------------------------------------------------------
     Required inputs:
@@ -79,9 +73,7 @@ Brief description of input arguments via help message:
                   sorting      : Sorting reads by coordinate.
                   mapping      : Mapping reads to each base pair
       -q|--quality QUALITY     : Phred quality score for filtering.
-      -t|--treatment TREATMENT : Target antibody.
-      -c|--control CONTROL     : Control antibody (IGG) or input.
-      -p|--proc THREADS        : Processor threads.
+      -t|--threads THREADS     : Processor threads.
       -r|--remove REMOVE       : Remove intermediate files.
       -h|--help HELP           : Show help message.
     ----------------------------------------------------------------
@@ -103,11 +95,7 @@ The following is a more detailed description of input arguments:
 
     --quality [-q]: Integer indicating Phred quality score for trimming low-quality bases at the ends of reads during read pairing and for removing low-quality reads during filtering. Phred score will also be used to approximate filtering settings during alignment.
 
-    --treatment [-t]: Name or value indicating the targeted antibody. This value is used to differentiate the targeted/treatment samples from the control samples, therefore the argument should be a string in the filenames. e.g. ```-t H3K9me3``` would indicate that all samples with ```H3K9me3``` as part of their filename are the targeted/treatment samples. This argument does not have to be valid antibody, but can be any string that is used within the sample names to indicate targeted samples. However, if targeting a histone modification, this argument should at least be the base name of the targeted histone modification, such as ```-t H3K``` or ```-t H2A```, so that peak calling is made more accurate by using the proper peak calling algorithm.
-
-    --control [-c]: Name or value indicating the control or input samples. Like ```--treatment```, this value is used to differentiate the control samples from the targeted samples. This can also be any string that is used within the sample names, but will be used to indicate control samples. e.g. ```-c IGG``` would indicate that all samples with 'IGG' as part of their filename are control samples.
-
-    --proc [-p]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on the users system.
+    --threads [-t]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on the users system.
 
     --remove [-r]: Removes intermediate files when no longer needed by pipeline to save hard drive space.
 
@@ -140,7 +128,3 @@ The following is a more detailed description of input arguments:
 - **Mapping**:
 
     To get the depth of coverage at each nucleotide, the sorted BAM files are mapped to the genome using ```samtools depth```. The output BED file is a tab-delimited file with three columns: chromosome name, position and reads. See the [project website](https://www.htslib.org/doc/samtools.html) for more details.
-
-- **Peak calling**:
-
-    Peak calling is performed using ```macs2 callpeak```. The ```q-value [-q]``` is set at 0.05 and ```genome size [-g]``` is determined automatically. If the data is paired-end, the format of the input will be set to ```-f BEDPE``` so that the insert size of pairs is used to build fragment pileup. The choice of peak calling algorithm--broad or narrow--is determined by the ```treatment [-t]``` argument. Broad peak calling is performed for histone modifications, whereas narrow peak calling is for transcription factors. If no peaks are called using the default ```--mfold``` parameter, ```macs2 callpeak``` will be repeatedly run using a decreasing lower limit for model building until enough peaks are found to build the shifting model or until the lower limit reaches 1. See the [github repo](https://github.com/macs3-project/MACS) for more details.

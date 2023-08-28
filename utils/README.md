@@ -1,5 +1,5 @@
-# ChIPPy utilities
-ChIPPy uses several python scripts to automate plotting of ChIP-seq data. These tools can be easily used independently if a different pipeline or tools were used to perform ChIP-seq analysis.
+# ChIPPy Utilities
+ChIPPy uses several python scripts to generate input files or automate plotting of ChIP-seq data. The plotting tools can easily be used independently if a different pipeline or tools were used to perform ChIP-seq analysis.
 
 ## plot_chromosome_coverage.py
 
@@ -54,3 +54,7 @@ Plots genomewide coverage for ChIP-seq data. Track lengths are normalized with r
     --distance [-d]: Integer indicating length of 5' and 3' regions to plot. By default, only the coding region for the plotted genes is used.
 
     --ymax [-y]--If argument is provided, all chromosome plots will use the maximum y-value for the entire binned dataset. If not provided, each chromosome will use the maximum value for that chromosome.
+
+## ChIPPeaks.sh
+
+Peak calling is performed using ```macs2 callpeak```. The ```q-value [-q]``` is set at 0.05 and ```genome size [-g]``` is determined automatically. If the data is paired-end, the format of the input will be set to ```-f BEDPE``` so that the insert size of pairs is used to build fragment pileup. The choice of peak calling algorithm--broad or narrow--is also determined automatically based on the input bam file being analyzed. Broad peak calling is performed for histone modifications, whereas narrow peak calling is for transcription factors. If no peaks are called using the default ```--mfold``` parameter, ```macs2 callpeak``` will be repeatedly run using a decreasing lower limit for model building until enough peaks are found to build the shifting model or until the lower limit reaches 1. See the [github repo](https://github.com/macs3-project/MACS) for more details.
