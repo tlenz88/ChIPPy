@@ -1,5 +1,5 @@
 # ChIPPy
-This is a complete pipeline for ChIP-seq data analysis. Most of the required packages are installed automatically. Pipeline can be started from any step, but specific files are required for the desired step.
+This is a complete pipeline for ChIP-seq data analysis. Pipeline can be started from any step, but specific files are required for the desired step.
 
 It is important to note that ChIPPy and any supplementary tools are merely templates to provide fast and simple ChIP-seq analysis and may not work for all samples or experimental designs. If new to ChIP-seq analysis, please learn about each of the individual tools used in this package and cite their respective publications.
 
@@ -136,9 +136,9 @@ The following is a more detailed description of input arguments:
 
 ChIPPeaks is a supplementary tool that performs peak calling and differential peak calling. It is meant to be used after running ChIPPy on a set of samples, but can be used on any dataset if the proper inputs are provided.
 
-Peak calling is performed using ```macs2 callpeak```. The ```q-value [-q]``` is set at 0.05 and ```genome size [-g]``` is determined automatically. If the data is paired-end, the format of the input will be set to ```-f BEDPE``` so that the insert size of pairs is used to build fragment pileup. The choice of peak calling algorithm--broad or narrow--is also determined automatically based on the 'Factor' column of the metadata file (see 'Required arguments' below). Broad peak calling is performed for histone modifications, whereas narrow peak calling is for transcription factors. See the [github repo](https://github.com/macs3-project/MACS) for more details.
+Peak calling is performed using ```macs2 callpeak```. The ```q-value [-q]``` is set at 0.05 and ```genome size [-g]``` is determined automatically. If the data is paired-end, the format of the input will be set to ```-f BEDPE``` so that the insert size of pairs is used to build fragment pileup. The choice of peak calling algorithm--broad or narrow--is also determined automatically based on the 'Factor' column of the metadata file. Broad peak calling is performed for histone modifications, whereas narrow peak calling is for transcription factors. See the [MACS github repo](https://github.com/macs3-project/MACS) for more details.
 
-The R package DiffBind is used for differential peak calling analysis. The metadata file is used to dictate experimental design and will determine what comparisons are made by DiffBind. See the [DiffBind vignette](https://bioconductor.org/packages/release/bioc/vignettes/DiffBind/inst/doc/DiffBind.pdf) for more information.
+The DiffBind R package is used for differential peak calling analysis. The metadata file is used to dictate experimental design and will determine what comparisons are made. See the [DiffBind vignette](https://bioconductor.org/packages/release/bioc/vignettes/DiffBind/inst/doc/DiffBind.pdf) for more information.
 
 ## ChIPPeaks.sh
 
