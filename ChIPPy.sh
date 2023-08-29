@@ -414,9 +414,9 @@ function trimming() {
             out_r1="$OUTPUT"/"$(basename "$(dirname "$fq_r1")")"/"$(basename "${fq_r1%%.*}")"
             out_r2="$OUTPUT"/"$(basename "$(dirname "$fq_r2")")"/"$(basename "${fq_r2%%.*}")"
             if ! command -v trimmomatic &> /dev/null; then
-                java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 >> "$log_dir"/trimming.log 2>&1
+                java -jar "$tmjar" PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 >> "$log_dir"/trimming.log 2>&1
             else
-                trimmomatic PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 >> "$log_dir"/trimming.log 2>&1
+                trimmomatic PE -threads "$THREADS" "$fq_r1" "$fq_r2" "${out_r1}_paired.fastq.gz" "${out_r1}_unpaired.fastq.gz" "${out_r2}_paired.fastq.gz" "${out_r2}_unpaired.fastq.gz" ILLUMINACLIP:"$GENOME"/adapters.txt:2:30:10 LEADING:"$QUALITY" TRAILING:"$QUALITY" MINLEN:25 >> "$log_dir"/trimming.log 2>&1
             fi
         elif [[ "$fq" == 0 ]]; then
             echo "Error: Input files must be '.fastq(.gz)'."

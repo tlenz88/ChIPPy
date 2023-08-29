@@ -5,10 +5,8 @@ Created: August 23, 2023
 Updated: August 28, 2023
 Author(s): Todd Lenz, tlenz001@ucr.edu
 
-Runs MACS2 callpeak using a ChIP-seq metadata file and performs differential
-peak calling using DiffBind. An example ChIP-seq metadata file is available in
-the 'examples' folder. This tool will automatically use this example file if
-no metadata [-m] argument is input.
+Runs MACS2 callpeak using a ChIP-seq metadata file. An example ChIP-seq
+metadata file is available in the 'examples' folder.
 """
 
 import sys
@@ -28,11 +26,16 @@ def parse_args(args):
                         '--metadata',
                         dest='metadata',
                         help='Path to ChIP-seq metadata file.',
-                        required=False)
+                        required=True)
     parser.add_argument('-g',
                         '--genome',
                         dest='genome',
                         help='Path to directory containing genome files.',
+                        required=False)
+    parser.add_argument('-o',
+                        '--out_dir',
+                        dest='out_dir',
+                        help='Path to output directory.',
                         required=False)
     parser.add_argument('-f',
                         '--fig_dir',
@@ -48,12 +51,7 @@ def parse_args(args):
 
 
 def input_params(args):
-    try:
-        metadata = pd.read_csv(args.metadata, sep = '\t')
-    except:
-        metadata = pd.read_csv(''.join([os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), '/examples/example_metadata.txt']), 
-            sep = '\t')
+    metadata = pd.read_csv(args.metadata, sep = '\t')
     try:
         genome_dir = os.path.abspath(args.genome)
     except:
@@ -72,30 +70,33 @@ def input_params(args):
     return metadata, genome_dir, fig_dir, log_dir
 
 
-def genome_files(genome):
-    cs = glob.glob(os.path.join(genome, '*.chrom.sizes'))
+def genome_files(genome_dir):
+    cs = glob.glob(os.path.join(genome_dir, '*.chrom.sizes'))
     if len(cs) == 0:
-        fa = glob.glob(os.path.join(genome, '*.fasta'))
+        fa = glob.glob(os.path.join(genome_dir, '*.fasta'))
         if len(fa) == 1:
             for f in fa:
                 fasta = f
         elif len(fa) == 0:
-            print('Error: No FASTA file found \
-                  in the \'genomes\' directory.')
+            print('Error: No FASTA or \'.chrom.sizes\' file found.')
+            sys.exit()
         else:
-            print('Error: Multiple FASTA files \
-                  found in \'genomes\' directory.')
+            print('Error: Multiple FASTA files found \
+                  in the \'genomes\' directory.')
+            sys.exit()
         create_sizes = ''.join([os.path.dirname(os.path.dirname(
             os.path.abspath(__file__))), '/scripts/create_sizes.py'])
         subprocess.run(['python3', create_sizes, fasta])
-        for s in glob.glob(os.path.join(genome, '*.chrom.sizes')):
+        for s in glob.glob(os.path.join(genome_dir, '*.chrom.sizes')):
             return pd.read_csv(s, sep='\t', header=None)
     elif len(cs) == 1:
         for s in cs:
+            print('\'.chrom.sizes\' file detected.')
             return pd.read_csv(s, sep='\t', header=None)
     else:
         print('Error: Multiple \'.chrom.sizes\' files \
               in \'genomes\' directory.')
+        sys.exit()
 
 
 def peak_calling(sample, gsize, log_dir):
@@ -111,7 +112,6 @@ def peak_calling(sample, gsize, log_dir):
                         bamControl, '-f', bam_format, '-g', gsize, '-n', 
                         name, '-q', '0.05', '--outdir', outdir, '-B', alg], 
                         stdout = log_file, stderr = log_file, text = True)
-        log_file.write('')
 
 
 def check_bam_type(bam):
@@ -145,24 +145,16 @@ def update_metadata(metadata, args):
         metadata.to_csv(outfile, sep = '\t')
 
 
-def diff_peaks(args, genome_dir, log_dir, fig_dir)
-    with open(os.path.join(log_dir, 'diff_peaks.log'), 'a+') as log_file:
-        subprocess.run(['Rscript', 'differential_peak_calling.R', genome_dir, fig_dir], 
-                        stdout = log_file, stderr = log_file, text = True)
-        log_file.write('')
-
-
 def main():
     args = parse_args(sys.argv[1:])
     metadata, genome_dir, fig_dir, log_dir = input_params(args)
     chrom_sizes = genome_files(genome_dir)
     print('Performing peak calling')
-    print('"----------------------------------------------------------------"')
-    #for sample in metadata.itertuples():
-    #    peak_calling(sample, str(chrom_sizes[1].sum()), log_dir)
+    print('----------------------------------------------------------------')
+    for sample in metadata.itertuples():
+        peak_calling(sample, str(chrom_sizes[1].sum()), log_dir)
     if len(metadata.columns) == 7:
         update_metadata(metadata, args)
-    diff_peaks(args, genome_dir, log_dir, fig_dir)
 
 
 if __name__ == '__main__':
