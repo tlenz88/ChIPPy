@@ -1,3 +1,10 @@
+#!/usr/bin/env Rscript
+
+## Created: June 19, 2022
+## Updated: August 30, 2023
+## Author(s): Todd Lenz, tlenz001@ucr.edu
+## ChIPPy: A complete pipeline for ChIP-seq data analysis and plotting.
+
 library(BiocParallel)
 library(DiffBind)
 library(tidyverse)

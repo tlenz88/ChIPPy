@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Created: August 25, 2023
-## Updated: August 28, 2023
+## Updated: August 30, 2023
 ## Author(s): Todd Lenz, tlenz001@ucr.edu
 ## ChIPPeaks: Performs peak calling and differential peak calling using an input chip-seq metadata file describing samples.
 
