@@ -13,7 +13,7 @@ function help {
     echo "---------------------------------------------------------------"
     echo " Input arguments:"
     echo "  -m|--metadata METADATA : ChIP-seq sample metadata file."
-    echo "  -c|--control CONTROL   : Control \'Condition\'."
+    echo "  -c|--control CONTROL   : Control condition."
     echo "  -g|--genome GENOME     : Directory containing genome files."
     echo "  -h|--help HELP         : Show help message."
     echo "---------------------------------------------------------------"
@@ -56,7 +56,7 @@ fi
 ########################################
 ## Define figure and log directories. ##
 ########################################
-data_dir="$(dirname "$(readlink -f $METADATA)")"
+data_dir="$(dirname "$(readlink -f "$METADATA")")"
 
 if [[ ! -e "$data_dir"/figures ]]; then
     fig_dir="$data_dir"/figures
@@ -75,35 +75,33 @@ fi
 ######################################################
 ## Check Python installation and required packages. ##
 ######################################################
-for p in "python3"; do
-    if ! command -v "$p" &> /dev/null; then
-        echo "Installing newest version of $p."
-        if command -v apt &> /dev/null; then
-            sudo apt update
-            sudo apt upgrade
-            sudo apt install -y "$p"
-        elif command -v yum &> /dev/null; then
-            sudo yum install -y "$p"
-        elif command -v dnf &> /dev/null; then
-            sudo dnf update
-            sudo dnf install -y "$p"
-        elif command -v zypper &> /dev/null; then
-            sudo zypper refresh
-            sudo zypper update
-            sudo zypper --non-interactive install "$p"
-        elif command -v pacman &> /dev/null; then
-            sudo pacman -Syu
-            sudo pacman install --noconfirm "$p"
-        elif command -v brew &> /dev/null; then
-            brew update
-            brew upgrade
-            brew install -y "$p"
-        else
-            echo "Can't determine package manager. Install $p manually."
-            exit 1
-        fi
+if ! command -v "python3" &> /dev/null; then
+    echo "Installing newest version of python3."
+    if command -v apt &> /dev/null; then
+        sudo apt update
+        sudo apt upgrade
+        sudo apt install -y python3
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y python3
+    elif command -v dnf &> /dev/null; then
+        sudo dnf update
+        sudo dnf install -y python3
+    elif command -v zypper &> /dev/null; then
+        sudo zypper refresh
+        sudo zypper update
+        sudo zypper --non-interactive install python3
+    elif command -v pacman &> /dev/null; then
+        sudo pacman -Syu
+        sudo pacman install --noconfirm python3
+    elif command -v brew &> /dev/null; then
+        brew update
+        brew upgrade
+        brew install -y python3
+    else
+        echo "Can't determine package manager. Install python3 manually."
+        exit 1
     fi
-done
+fi
 
 if ! command -v pip3 &> /dev/null; then
     python -m ensurepip --upgrade
@@ -114,12 +112,10 @@ if ! command -v macs2 &> /dev/null; then
     pip3 install macs2
 fi
 
-for pkg in "pandas"; do
-    if ! python3 -c "import $pkg" &> /dev/null; then
-        echo "Installing $pkg."
-        pip3 install "$pkg"
-    fi
-done
+if ! python3 -c "import pandas" &> /dev/null; then
+    echo "Installing pandas."
+    pip3 install pandas
+fi
 
 
 #######################################
@@ -129,7 +125,7 @@ function get_chrom_sizes() {
     fa=$(find -L "$1" -mindepth 1 -maxdepth 1 \( -name "*.fasta" -o -name "*.fa" \))
     chrom_sizes=$(find -L "$1" -mindepth 1 -maxdepth 1 \( -name "*.chrom.sizes" \))
     bname="${fa%%.*}"
-    if [[ $fa == "" && ! -e "$bname.chrom.sizes"  ]]; then
+    if [[ $fa = "" && ! -e "$bname.chrom.sizes"  ]]; then
         echo "Error: No FASTA or '.chrom.sizes' file found."
     elif [[ $fa != "" && ! -e "$bname.chrom.sizes" ]]; then
         echo "Finding chromosome lengths."
@@ -149,7 +145,7 @@ fi
 ## Run peak calling. ##
 #######################
 function check_bam_type() {
-    if $(samtools view -f 0x1 "$bamControl" | head -n 1 | wc -l) == 1; then
+    if $(samtools view -f 0x1 "$bamControl" | head -n 1 | wc -l) -eq 1; then
         echo "BAMPE"
     else
         echo "BAM"
@@ -165,21 +161,36 @@ function check_alg_type() {
     fi
 }
 
-gsize="$(awk -F '\t' '{ sum += $2 } END { print sum }' $chrom_sizes)"
+gsize="$(awk -F '\t' '{ sum += $2 } END { print sum }' "$chrom_sizes")"
 
 echo "Performing peak calling."
 while IFS= read -r line; do
-    bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
-    bamReads="$data_dir/${bamReads#$data_dir}"
-    bamControl="$(echo "$line" | awk -F '\t' '{print $7}')"
-    bamControl="$data_dir/${bamControl#$data_dir}"
-    bam_format="$(check_bam_type "$bamReads")"
-    name="$(echo "$line" | awk -F '\t' '{print $1}')"
-    echo "$name"
-    outdir="$(dirname "$bamReads")"
-    alg="$(check_alg_type "$line")"
-    macs2 callpeak -t "$bamReads" -c "$bamControl" -f "$bam_format" -g "$gsize" -n "$name" -q 0.05 --outdir "$outdir" -B "$alg" >> "$log_dir"/peak_calling.log 2>&1
+        SampleID="$(echo "$line" | awk -F '\t' '{print $1}')"
+        echo "$SampleID"
+        bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
+        bamReads="$data_dir/${bamReads#"$data_dir"}"
+        bamControl="$(echo "$line" | awk -F '\t' '{print $7}')"
+        bamControl="$data_dir/${bamControl#"$data_dir"}"
+        bam_format="$(check_bam_type "$bamReads")"
+        outdir="$(dirname "$bamReads")"
+        alg="$(check_alg_type "$line")"
+        macs2 callpeak -t "$bamReads" -c "$bamControl" -f "$bam_format" -g "$gsize" -n "$SampleID" -q 0.05 --outdir "$outdir" -B "$alg" >> "$log_dir"/peak_calling.log 2>&1
 done < <(tail -n +2 "$METADATA")
+echo
+
+while IFS= read -r line; do
+    if [[ "$(echo "$line" | awk -F'\t' '{print NF}')" -eq 7 ]]; then
+        if [[ "$(echo "$line" | awk -F '\t' '{print $1}')" = "SampleID" ]]; then
+            echo -e "$line\tPeaks\tPeakCaller"
+        else
+            bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
+            echo -e "$line\t${bamReads%_*}_peaks.xls\tmacs"
+        fi
+    else
+        echo "$line"
+    fi
+done < "$METADATA" > "${METADATA%.*}_updated.txt"
+mv "${METADATA%.*}_updated.txt" "$METADATA"
 
 
 ####################################
@@ -187,9 +198,9 @@ done < <(tail -n +2 "$METADATA")
 ####################################
 if [[ -z "$CONTROL" ]]; then
     echo "No control argument entered. Differential peak calling step can not be performed."
-elif [[ $(awk '{ print $3 }' < "$METADATA" | grep "$CONTROL" | wc -l) == 0 ]]; then
-    echo "Control argument not found metadata."
+elif [[ $(awk '{ print $3 }' < "$METADATA" | grep -c "$CONTROL") -eq 0 ]]; then
+    echo "Control argument not found in metadata."
 else
     echo "Finding differential peaks."
-    Rscript "$SCRIPTS"/differential_peak_calling.R "$METADATA" "$CONTROL" >> "$log_dir"/diff_peak_calling.log 2>&1
+    Rscript "$SCRIPTS"/differential_peak_calling.R "$(dirname "$METADATA")" "$(basename "$METADATA")" "$CONTROL" >> "$log_dir"/diff_peak_calling.log 2>&1
 fi

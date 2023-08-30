@@ -3,45 +3,33 @@ library(DiffBind)
 library(tidyverse)
 library(RColorBrewer)
 
+
 args <- commandArgs(trailingOnly = TRUE)
+setwd(args[1])
 
-##############################################################################
-############################## Reading peaksets ##############################
-##############################################################################
-
-samples <- read.csv(args[1], sep="\t")
+# Reading peaksets
+samples <- read.csv(args[2], sep="\t")
 chip_df <- dba(sampleSheet=samples)
 
-##############################################################################
-######################## Generate consensus peaksets #########################
-##############################################################################
 
+#Generate consensus peaksets
 chip_consensus <- dba.peakset(chip_df, consensus=c(DBA_CONDITION), 
                               minOverlap=1)
 
-##############################################################################
-########################### Generate count matrix ############################
-##############################################################################
-
+# Generate count matrix
 chip_df <- dba.count(chip_df, bUseSummarizeOverlaps=TRUE, bParallel=TRUE)
 
-##############################################################################
-################## Establishing a model design and contrast ##################
-##############################################################################
 
+# Establish a model design and contrast
 chip_df <- dba.contrast(chip_df, reorderMeta=list(Condition=args[2]), 
                         minMembers=2)
 
-##############################################################################
-#################### Performing the differential analysis ####################
-##############################################################################
 
+# Perform differential analysis
 chip_df <- dba.analyze(chip_df, method=DBA_DESEQ2, bParallel=TRUE)
 
-##############################################################################
-################# Retrieving the differentially bound sites ##################
-##############################################################################
 
+# Retrieve differentially bound sites
 chip_df.report <- dba.report(chip_df, method=DBA_DESEQ2, th=0.05, 
                              bUsePval=FALSE, fold=1, bNormalized=TRUE, 
                              bFlip=FALSE, precision=0, bCalled=TRUE, 
@@ -49,31 +37,25 @@ chip_df.report <- dba.report(chip_df, method=DBA_DESEQ2, th=0.05,
 out <- as.data.frame(chip_df.report)
 write.table(out, file="diff_peaks.txt", sep="\t", quote=F, row.names=F)
 
-##############################################################################
-################################## Plotting ##################################
-##############################################################################
 
+# Generate plots
 pdf("/figures/DiffBind_figures.pdf")
-
-## Correlation Heatmap
 dba.plotHeatmap(chip_df, correlations=TRUE, report=chip_df.report, 
                 colScheme="Reds")
-
-## PCA plot
+hmap <- colorRampPalette(c("blue", "white", "red"))(n = 15)
+dba.plotHeatmap(chip_df, contrast=1, correlations=FALSE, scale="row", 
+                report=chip_df.report, colScheme=hmap)
 dba.plotPCA(chip_df, contrast=1, th=0.05, report=chip_df.report, 
             vColors=c("#f8766d", "#00bfc4"))
-
-## Venn diagram
 dba.plotVenn(chip_consensus, chip_consensus$masks$Consensus)
-
-## MA plot
-dba.plotMA(chip_df, th=0.05, fold=1, bNormalized=TRUE, 
-           dotSize=1, bSmooth=FALSE, bXY=FALSE)
-
-## Boxplot
+dba.plotMA(chip_df, th=0.05, fold=1, bNormalized=TRUE, dotSize=1, 
+           bSmooth=FALSE, bXY=FALSE)
 dba.plotBox(chip_df, notch=FALSE, vColors=c("#f8766d", "#00bfc4"))
+dba.plotVolcano(chip_df, th=0.05, fold=1)
+dev.off()
 
-## Volcano plot
+
+## Custom volcano plot parameters
 # How to customize volcano plot elements:
 # debug(DiffBind:::pv.DBAplotVolcano)
 # When you get the line line that says "plot(p)", enter the following, 
@@ -118,11 +100,3 @@ dba.plotBox(chip_df, notch=FALSE, vColors=c("#f8766d", "#00bfc4"))
 #          plot.caption = element_text(size = 10, family = "serif", 
 #                                      margin = margin(14, 10, 7, 0, "pt")),
 #          plot.margin = margin(7, 14, 7, 7, "pt"))
-dba.plotVolcano(chip_df, th=0.05, fold=1)
-
-## Heatmaps
-hmap <- colorRampPalette(c("blue", "white", "red"))(n = 15)
-dba.plotHeatmap(chip_df, contrast=1, correlations=FALSE, scale="row", 
-                report=chip_df.report, colScheme=hmap)
-
-dev.off()
