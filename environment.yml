@@ -5,7 +5,7 @@ channels:
  - defaults
 dependencies:
  - python=3.10
- - r-base=4.3
+ - r-base=4.2.3
  - fastqc
  - trimmomatic
  - bowtie2
@@ -14,5 +14,6 @@ dependencies:
  - macs2
  - r-tidyverse
  - r-rcolorbrewer
+ - r-argparse
  - bioconductor-diffbind
  - bioconductor-biocparallel

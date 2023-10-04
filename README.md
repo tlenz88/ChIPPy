@@ -57,7 +57,7 @@ Brief description of input arguments via help message:
 
 ```
     ChIPPy.sh --help
-    usage: ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r]
+    Usage: ChIPPy.sh -i INPUT -g GENOME [-o OUTPUT] [-s STEP] [-q QUALITY] [-t THREADS] [-r]
 
     ----------------------------------------------------------------
      Required inputs:
@@ -140,33 +140,6 @@ Peak calling is performed using ```macs2 callpeak```. The ```q-value [-q]``` is 
 
 The DiffBind R package is used for differential peak calling analysis. The metadata file is used to dictate experimental design and will determine what comparisons are made. See the [DiffBind vignette](https://bioconductor.org/packages/release/bioc/vignettes/DiffBind/inst/doc/DiffBind.pdf) for more information.
 
-## ChIPPeaks.sh
-
-Brief description of input arguments via help message:
-
-```
-    ChIPPeaks.sh --help
-    usage : ChIPPeaks.sh -m METADATA -c CONTROL -g GENOME [-h]
-
-    --------------------------------------------------------------
-     Input arguments:
-      -m|--metadata METADATA : ChIP-seq sample metadata file.
-      -c|--control CONTROL   : Control 'Condition'.
-      -g|--genome GENOME     : Directory containing genome files.
-      -h|--help HELP         : Show help message.
-    --------------------------------------------------------------
-```
-
-The following is a more detailed description of input arguments:
-
-- **Input arguments**:
-
-    --metadata [-m]: Path to the tab-delimited text file containing ChIP-seq experiment metadata. Columns of metadata file should have at least seven columns: SampleID, Factor, Condition, Replicate, bamReads, ControlID and bamControl. The metadata file will be automatically modified to include two additional columns--Peaks and PeakCaller--after peak calling. Use the ```example_metadata.txt``` file in the ```examples``` directory as a template. See the [DiffBind vignette](https://bioconductor.org/packages/release/bioc/vignettes/DiffBind/inst/doc/DiffBind.pdf) and the following section of this README for more information on setting up the metadata file.
-
-    --control[-c]: Sting indicating the control samples in the experiment. This string should be under the 'Condition' column in the metadata file.
-
-    --genome [-g]: Directory containing genome files for the organism of interest. A FASTA file should be present in the directory so that any additional required genome files can be automatically created if missing. All genome files should have the same basename.
-
 ## How should I set up the metadata?
 
 The metadata file should contain a minimum of 7 columns used to describe the format of the user's ChIP-seq experiment, including sample names, relationships between samples, replicate numbers, and file paths. Although it isn't required for the metadata to be formatted exactly as shown in the ```example_metadata.txt``` file, it's recommended that any additional columns be added at the end (to the right) of the existing columns. The 'Condition' column is used for differential peak calling.
@@ -186,3 +159,30 @@ The following are brief descriptions of the template columns:
     --ControlID: Short strings unique to each control sample.
 
     --bamControl: Path to coordinate sorted BAM files for control samples.
+
+## ChIPPeaks.sh
+
+Brief description of input arguments via help message:
+
+```
+    ChIPPeaks.sh --help
+    Usage: ChIPPeaks.sh -m METADATA -c CONTROL -g GENOME [-h]
+
+    --------------------------------------------------------------
+     Input arguments:
+      -m|--metadata METADATA : ChIP-seq sample metadata file.
+      -c|--control CONTROL   : Control 'Condition'.
+      -g|--genome GENOME     : Directory containing genome files.
+      -h|--help HELP         : Show help message.
+    --------------------------------------------------------------
+```
+
+The following is a more detailed description of input arguments:
+
+- **Input arguments**:
+
+    --metadata [-m]: Path to the tab-delimited text file containing ChIP-seq experiment metadata. Columns of metadata file should have at least seven columns: SampleID, Factor, Condition, Replicate, bamReads, ControlID and bamControl. The metadata file will be automatically modified to include two additional columns--Peaks and PeakCaller--after peak calling. Use the ```example_metadata.txt``` file in the ```examples``` directory as a template. See the [DiffBind vignette](https://bioconductor.org/packages/release/bioc/vignettes/DiffBind/inst/doc/DiffBind.pdf) and the following section of this README for more information on setting up the metadata file.
+
+    --control[-c]: Sting indicating the control samples in the experiment. This string should be under the 'Condition' column in the metadata file.
+
+    --genome [-g]: Directory containing genome files for the organism of interest. A FASTA file should be present in the directory so that any additional required genome files can be automatically created if missing. All genome files should have the same basename.

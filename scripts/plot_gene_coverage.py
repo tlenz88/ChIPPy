@@ -69,6 +69,7 @@ def parse_args(args):
                         help='List of genes to plot, separated by spaces, '
                              'commas, newlines or tabs. Genes will be '
                              'extracted from the provided GFF file.',
+                        nargs='+',
                         required=False)
     parser.add_argument('-n',
                         '--normalize',
@@ -101,7 +102,14 @@ def input_params(args):
     genes, exons = filter_gff(pd.read_csv(args.gff, sep='\t', header=None, 
                                           usecols=[0,2,3,4,6,8]))
     if args.gene_list:
-        genes, exons = extract_genes(genes, exons, args.gene_list)
+        if len(args.gene_list) == 1:
+            for gl in args.gene_list:
+                if os.path.exists(gl):
+                    genes, exons = extract_genes(genes, exons, gl)
+                else:
+                    genes = genes[genes[9] == gl]
+        else:
+            genes = genes[genes[9].isin(args.gene_list)]
     samples = []
     for i in args.bed:
         bed = pd.read_csv(i, sep='\t', header=None)
@@ -129,7 +137,8 @@ def filter_gff(gff):
     """ Extracts gene and exon accessions, names and descriptions. """
     exons = gff[gff[2] == 'exon'].drop([2], axis=1).copy()
     genes = gff[(gff[2] == 'protein_coding_gene') | (gff[2] == 'ncRNA_gene') | 
-                (gff[2] == 'pseudogene')].reset_index(drop=True).copy()
+                (gff[2] == 'pseudogene') | (gff[2] == 'gene')
+                ].reset_index(drop=True).copy()
     genes[9] = genes[8].str.extract(r'ID=(.*?);', expand=True)
     genes[10] = genes[8].str.extract(r'Name=(.*?);', expand=True)
     genes[11] = genes[8].str.extract(r'description=(.*?);', expand=True)
@@ -253,14 +262,25 @@ def create_arrow(ax, exons, strand, res, max_yval, dist):
     arrows = []
     start = dist // res + 1
     prev_end = 0
+    prev_bin = 0
     for e in exons.itertuples():
-        if e[0] == 0:
-            arrows.append([start, start + (e[3]-e[2]) // res + 1])
+        if e[2] % res != 0:
+            start_bin = e[2] // res + 1
         else:
-            arrows.append([start + (e[2]-prev_end) // res + 1, 
-                           start + (e[3]-prev_end) // res + 1])
-        start += (e[3]-e[2]) // res + 1
-        prev_end = e[3]
+            start_bin = e[2] // res
+        if e[3] % res != 0:
+            end_bin = e[3] // res + 1
+        else:
+            end_bin = e[3] // res
+        if e[0] == 0 or len(arrows) == 0:
+            arrows.append([start, start + end_bin - start_bin])
+            prev_bin = end_bin - start_bin + start
+            prev_end = end_bin
+        else:
+            arrows.append([start_bin - prev_end + prev_bin, 
+                           end_bin - prev_end + prev_bin])
+            prev_bin = end_bin - prev_end + prev_bin
+            prev_end = end_bin
     if strand == '+':
         for arrow in arrows:
             ax.arrow(arrow[0], -max_yval * .5, arrow[1] - arrow[0], 0, 
@@ -279,9 +299,11 @@ def create_arrow(ax, exons, strand, res, max_yval, dist):
 def main():
     args = parse_args(sys.argv[1:])
     genes, exons, df, out, samples, res, dist = input_params(args)
+    print(genes)
+    exit(1)
     df = extract_gene_regions(df, genes, dist)
     df = data_binning(df, res)
-    max_yval = df[list(df.columns)[-3:]].max().max()
+    max_yval = df[list(df.columns)[4:]].max().max()
     max_xval = max(df[0].value_counts())
     pdf = PdfPages(out)
     for gene, idx in zip(df[0].unique(), range(len(df[0].unique()))):
@@ -290,7 +312,7 @@ def main():
         fig = plt.figure()
         fig.set_figheight(len(samples))
         fig.set_figwidth(20)
-        sample_colors = ['#D81B60', '#1E88E5', '#FFC107']
+        sample_colors = ['#00bfc4', '#f8766d'] #'#f8766d', '#00bfc4' # '#D81B60', '#1E88E5', '#FFC107'
         for i in [*range(len(samples))]:
             ax = plt.subplot2grid((len(samples)+1, 20), (i, 0), 
                                   colspan=int(math.ceil(max(gene_df[3]) / 

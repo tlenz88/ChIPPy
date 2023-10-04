@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Created: August 25, 2023
-## Updated: August 30, 2023
+## Updated: August 31, 2023
 ## Author(s): Todd Lenz, tlenz001@ucr.edu
 ## ChIPPeaks: Performs peak calling and differential peak calling using an input chip-seq metadata file describing samples.
 
@@ -37,7 +37,7 @@ done
 pipedir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 SCRIPTS="$pipedir"/scripts
 
-while getopts ":m:c:o:g:h:" opt; do
+while getopts ":m:c:g:h:" opt; do
     case $opt in
         m) METADATA="$OPTARG";;
         c) CONTROL="$OPTARG";;
@@ -112,11 +112,6 @@ if ! command -v macs2 &> /dev/null; then
     pip3 install macs2
 fi
 
-if ! python3 -c "import pandas" &> /dev/null; then
-    echo "Installing pandas."
-    pip3 install pandas
-fi
-
 
 #######################################
 ## Check for necessary genome files. ##
@@ -125,12 +120,18 @@ function get_chrom_sizes() {
     fa=$(find -L "$1" -mindepth 1 -maxdepth 1 \( -name "*.fasta" -o -name "*.fa" \))
     chrom_sizes=$(find -L "$1" -mindepth 1 -maxdepth 1 \( -name "*.chrom.sizes" \))
     bname="${fa%%.*}"
-    if [[ $fa = "" && ! -e "$bname.chrom.sizes"  ]]; then
+    if [[ -e "$bname.chrom.sizes"  ]]; then
+        echo "'.chrom.sizes' file found."
+        gsize="$(awk -F '\t' '{ sum += $2 } END { print sum }' "$chrom_sizes")"
+    elif [[ $fa = "" && ! -e "$bname.chrom.sizes"  ]]; then
         echo "Error: No FASTA or '.chrom.sizes' file found."
+        exit 1
     elif [[ $fa != "" && ! -e "$bname.chrom.sizes" ]]; then
         echo "Finding chromosome lengths."
         python3 "$SCRIPTS"/create_sizes.py "$fa"
+        gsize="$(awk -F '\t' '{ sum += $2 } END { print sum }' "$chrom_sizes")"
     fi
+    echo
 }
 
 if [[ -z $GENOME ]]; then
@@ -161,20 +162,18 @@ function check_alg_type() {
     fi
 }
 
-gsize="$(awk -F '\t' '{ sum += $2 } END { print sum }' "$chrom_sizes")"
-
 echo "Performing peak calling."
 while IFS= read -r line; do
-        SampleID="$(echo "$line" | awk -F '\t' '{print $1}')"
-        echo "$SampleID"
-        bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
-        bamReads="$data_dir/${bamReads#"$data_dir"}"
-        bamControl="$(echo "$line" | awk -F '\t' '{print $7}')"
-        bamControl="$data_dir/${bamControl#"$data_dir"}"
-        bam_format="$(check_bam_type "$bamReads")"
-        outdir="$(dirname "$bamReads")"
-        alg="$(check_alg_type "$line")"
-        macs2 callpeak -t "$bamReads" -c "$bamControl" -f "$bam_format" -g "$gsize" -n "$SampleID" -q 0.05 --outdir "$outdir" -B "$alg" >> "$log_dir"/peak_calling.log 2>&1
+    SampleID="$(echo "$line" | awk -F '\t' '{print $1}')"
+    echo "$SampleID"
+    bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
+    bamReads="$data_dir/${bamReads#"$data_dir"}"
+    bamControl="$(echo "$line" | awk -F '\t' '{print $7}')"
+    bamControl="$data_dir/${bamControl#"$data_dir"}"
+    bam_format="$(check_bam_type "$bamReads")"
+    outdir="$(dirname "$bamReads")"
+    alg="$(check_alg_type "$line")"
+    macs2 callpeak -t "$bamReads" -c "$bamControl" -f "$bam_format" -g "$gsize" -n "$SampleID" -q 0.05 --outdir "$outdir" -B "$alg" >> "$log_dir"/peak_calling.log 2>&1
 done < <(tail -n +2 "$METADATA")
 echo
 
@@ -197,9 +196,9 @@ mv "${METADATA%.*}_updated.txt" "$METADATA"
 ## Run differential peak calling. ##
 ####################################
 if [[ -z "$CONTROL" ]]; then
-    echo "No control argument entered. Differential peak calling step can not be performed."
+    echo "Warning: No control argument entered. Differential peak calling step can not be performed."
 elif [[ $(awk '{ print $3 }' < "$METADATA" | grep -c "$CONTROL") -eq 0 ]]; then
-    echo "Control argument not found in metadata."
+    echo "Warning: Control argument not found in metadata. Differential peak calling step can not be performed."
 else
     echo "Finding differential peaks."
     Rscript "$SCRIPTS"/differential_peak_calling.R "$(dirname "$METADATA")" "$(basename "$METADATA")" "$CONTROL" >> "$log_dir"/diff_peak_calling.log 2>&1

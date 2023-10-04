@@ -2,13 +2,13 @@
 
 """
 Created: June 13, 2022
-Updated: August 23, 2023
+Updated: August 31, 2023
 Author(s): Todd Lenz, tlenz001@ucr.edu
 
-Plots genomewide coverage for ChIP-seq data. Track lengths are normalized
-with respect to the longest chromosome--i.e. the longest chromosome will
-fill the width of the figure and all other chromosomes are proportionally
-plotted against it.
+Plots genomewide coverage for ChIP-seq data. Track lengths are
+normalized with respect to the longest chromosome--i.e. the longest
+chromosome will fill the width of the figure and all other chromosomes
+are proportionally plotted against it.
 """
 
 
@@ -29,7 +29,7 @@ def parse_args(args):
                         '--bed',
                         dest='bed',
                         help='Tab-delimited BED files with per-base '
-                             'read coverage (bedtools genomecov -d).',
+                             'read coverage.',
                         nargs='+',
                         required=True)
     parser.add_argument('-g',
@@ -50,18 +50,20 @@ def parse_args(args):
     parser.add_argument('-o',
                         '--output',
                         dest='output',
-                        help='Output file path and name. If no file is given, '
-                             'the output will be saved in the same directory '
-                             'as the first BED file with a default file name.',
+                        help='Output file path and name. If no file is '
+                             'given, the output will be saved in the same '
+                             'directory as the first BED file with a default '
+                             'file name.',
                         required=False,
                         default=None)
     parser.add_argument('-r',
                         '--resolution',
                         dest='resolution',
                         help='Resolution at which to bin read count data. '
-                             'Binning will begin at coordinate 1 and continue '
-                             'to the end of the gene, therefore the last bin '
-                             'may be less than the given value.',
+                             'Binning will begin at coordinate 1 and '
+                             'continue to the end of the chromosome, '
+                             'therefore the last bin may be less than the '
+                             'given value.',
                         required=False,
                         default=10000,
                         type=int)
@@ -101,9 +103,8 @@ def parse_args(args):
 
 def input_params(args):
     """
-    Parse input arguments, loading bed files into dataframes. If 
-    provided, the samples, resolution, and distance arguments will also 
-    be parsed and genes will be extracted from an input gff file.
+    Parse input arguments and load bed files into dataframes. If 
+    provided, genes will be extracted from an input gff file.
     """
     genes, centromeres = None, None
     if args.gff:
@@ -139,7 +140,8 @@ def input_params(args):
 def filter_gff(gff):
     """ Extracts gene accessions, names and descriptions. """
     genes = gff[(gff[2] == 'protein_coding_gene') | (gff[2] == 'ncRNA_gene') | 
-                (gff[2] == 'pseudogene')].reset_index(drop=True).copy()
+                (gff[2] == 'pseudogene') | (gff[2] == 'gene')
+                ].reset_index(drop=True).copy()
     genes[9] = genes[8].str.extract(r'ID=(.*?);', expand=True)
     genes[10] = genes[8].str.extract(r'Name=(.*?);', expand=True)
     genes[11] = genes[8].str.extract(r'description=(.*?);', expand=True)
@@ -191,10 +193,8 @@ def normalize_df(df, norm):
             mmr = df[i].sum() / 1000000
             df[i] = df[i].div(mmr)
     else:
-        print('Provided method of normalization is not valid so data will not '
-              'be normalized. Run script with -h flag to see valid '
-              'normalization methods.')
-        pass
+        print('Error: Provided method of normalization is not valid.')
+        exit()
     return df
 
 
@@ -236,7 +236,17 @@ def annotate_genes(ax, genes, res, max_yval):
     for g in genes.itertuples():
         ax.arrow(g[2] // res + 1, -max_yval * .2, (g[3]-g[2]) // res + 1, 
                  0, width=max_yval/4, head_width=0, head_length=0, 
-                 facecolor='#FF0000', edgecolor='#FF0000', 
+                 facecolor='#0000FF', edgecolor='#0000FF', 
+                 length_includes_head=True, clip_on=False)
+    return ax
+
+
+def annotate_centromeres(ax, centromeres, res, max_yval):
+    """ Annotate each plot with bars representing genes. """
+    for c in centromeres.itertuples():
+        ax.arrow(c[2] // res + 1, -max_yval * .2, (c[3]-c[2]) // res + 1, 
+                 0, width=max_yval/4, head_width=0, head_length=0, 
+                 facecolor='#808080', edgecolor='#808080', 
                  length_includes_head=True, clip_on=False)
     return ax
 
@@ -252,7 +262,8 @@ def main():
     num_plots = len(df[0].unique())*(len(samples)+1)
     plot_range = [*range(num_plots)]
     plot_idx = 0
-    sample_colors = ['#D81B60', '#1E88E5', '#FFC107']
+    #sample_colors = ['#D81B60', '#1E88E5', '#FFC107']
+    sample_colors = ['#1E88E5', '#808080', '#D3D3D3']
     fig = plt.figure()
     fig.set_figheight(num_plots)
     fig.set_figwidth(20)
@@ -262,8 +273,8 @@ def main():
             max_yval = chr_df[list(chr_df.columns)[2:]].max().max()
         for i in [*range(len(samples))]:
             ax = plt.subplot2grid((num_plots, 20), (plot_range[plot_idx], 0), 
-                                  colspan=int(math.ceil(max(chr_df[1]) / 
-                                                        max_xval * 20)), 
+                                  colspan=int(math.ceil(max(chr_df[1]) 
+                                                        / max_xval * 20)), 
                                                         rowspan=1)
             barplt = plt.bar(np.array(chr_df[1]), np.array(chr_df[2+i]), 
                              width=1, color=sample_colors[i])
@@ -272,9 +283,16 @@ def main():
             if i == len(samples) - 1:
                 plot_idx += 1
                 if genes is not None:
-                    ax = annotate_genes(ax, genes[genes[0] == chr_df[0].iloc[0]
-                                                  ].reset_index(drop=True), 
-                                                  res, max_yval)
+                    ax = annotate_genes(ax, 
+                                        genes[genes[0] == chr_df[0].iloc[0]
+                                              ].reset_index(drop=True), 
+                                              res, max_yval)
+                if centromeres is not None:
+                    ax = annotate_centromeres(ax, 
+                                        centromeres[centromeres[0] == 
+                                                    chr_df[0].iloc[0]
+                                              ].reset_index(drop=True), 
+                                              res, max_yval)
     fig.subplots_adjust(hspace=0)
     fig.tight_layout(h_pad=0)
     pdf.savefig()

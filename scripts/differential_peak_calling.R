@@ -1,35 +1,74 @@
 #!/usr/bin/env Rscript
 
 ## Created: June 19, 2022
-## Updated: August 30, 2023
+## Updated: August 31, 2023
 ## Author(s): Todd Lenz, tlenz001@ucr.edu
-## ChIPPy: A complete pipeline for ChIP-seq data analysis and plotting.
+## Performs differential peak calling via DiffBind.
 
-library(BiocParallel)
-library(DiffBind)
-library(tidyverse)
-library(RColorBrewer)
-
+#library(BiocParallel)
+#library(DiffBind)
+#library(tidyverse)
+#library(RColorBrewer)
 
 args <- commandArgs(trailingOnly = TRUE)
-setwd(args[1])
+
+show_help <- function() {
+    cat("differential_peak_calling.R --help\n")
+    cat("Usage: differential_peak_calling.R -o OUTPUT -m METADATA -c CONTROL [--help]\n")
+    cat("\n")
+    cat("------------------------------------------------------------\n")
+    cat(" Input arguments:\n")
+    cat("  -o|--output OUTPUT     : Path to the output directory.\n")
+    cat("  -m|--metadata METADATA : ChIP-seq metadata file name.\n")
+    cat("  -c|--control CONTROL   : String indicating control group.\n")
+    cat("  -h|--help HELP         : Show help message.\n")
+    cat("------------------------------------------------------------\n")
+}
+
+if ("--help" %in% args || "-h" %in% commandArgs()) {
+    show_help()
+    quit()
+}
+
+
+for (i in c(1, 3, 5)) {
+    if (!(args[i] %in% c("--output", "-o", "--metadata", "-m", "--control", "-c"))) {
+        cat(paste("Error: ", args[i], "is an invalid argument.\n"))
+        quit()
+    } else if (args[i] == "--output" || args[i] == "-o") {
+        if (file.exists(args[i + 1])) {
+            setwd(args[i + 1])
+        }
+    } else if (args[i] == "--metadata" || args[i] == "-m") {
+        if (file.exists(args[i + 1])) {
+            metadata <- args[i + 1]
+        } else {
+            cat("Error: Invalid input for metadata argument.\n")
+        }
+    } else if (args[i] == "--control" || args[i] == "-c") {
+        control <- args[i + 1]
+    }
+}
+
 
 # Reading peaksets
-samples <- read.csv(args[2], sep="\t")
+samples <- read.csv(metadata, sep="\t")
+if (!(control %in% samples$Condition)) {
+    cat(paste("Error: ", control, " not found in 'Condition' column of metadata\n"))
+}
+quit()
 chip_df <- dba(sampleSheet=samples)
 
+# Generate consensus peaksets
+chip_consensus <- dba.peakset(chip_df, consensus=c(DBA_CONDITION), minOverlap=1)
 
-#Generate consensus peaksets
-chip_consensus <- dba.peakset(chip_df, consensus=c(DBA_CONDITION), 
-                              minOverlap=1)
 
 # Generate count matrix
 chip_df <- dba.count(chip_df, bUseSummarizeOverlaps=TRUE, bParallel=TRUE)
 
 
 # Establish a model design and contrast
-chip_df <- dba.contrast(chip_df, reorderMeta=list(Condition=args[2]), 
-                        minMembers=2)
+chip_df <- dba.contrast(chip_df, reorderMeta=list(Condition=args[3]), minMembers=2)
 
 
 # Perform differential analysis
@@ -46,7 +85,7 @@ write.table(out, file="diff_peaks.txt", sep="\t", quote=F, row.names=F)
 
 
 # Generate plots
-pdf("/figures/DiffBind_figures.pdf")
+pdf("figures/DiffBind_figures.pdf")
 dba.plotHeatmap(chip_df, correlations=TRUE, report=chip_df.report, 
                 colScheme="Reds")
 hmap <- colorRampPalette(c("blue", "white", "red"))(n = 15)
