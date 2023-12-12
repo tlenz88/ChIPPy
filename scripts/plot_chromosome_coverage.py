@@ -96,7 +96,6 @@ def parse_args(args):
                         dest='ymax',
                         help='Set the maximum y-value for all chromosomes.',
                         required=False,
-                        action='store_false',
                         default=None,
                         type=int)
     return parser.parse_args()
@@ -257,8 +256,8 @@ def annotate_centromeres(ax, centromeres, res, max_yval):
 def main():
     args = parse_args(sys.argv[1:])
     genes, centromeres, df, out, samples, res, max_yval = input_params(args)
-    max_xval = max(df[0].value_counts())
     df = data_binning(df, res)
+    max_xval = max(df[0].value_counts())
     pdf = PdfPages(out)
     num_plots = len(df[0].unique())*(len(samples)+1)
     plot_range = [*range(num_plots)]
