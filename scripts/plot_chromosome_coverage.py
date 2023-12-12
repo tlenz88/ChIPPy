@@ -2,7 +2,7 @@
 
 """
 Created: June 13, 2022
-Updated: August 31, 2023
+Updated: December 12, 2023
 Author(s): Todd Lenz, tlenz001@ucr.edu
 
 Plots genomewide coverage for ChIP-seq data. Track lengths are
@@ -135,7 +135,7 @@ def input_params(args):
         df = normalize_df(df, args.normalize)
     res = int(args.resolution)
     if args.ymax:
-        max_yval = int(args.resolution)
+        max_yval = int(args.ymax)
     return genes, centromeres, df, out, samples, res, max_yval
 
 

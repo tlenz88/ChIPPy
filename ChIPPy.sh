@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Created: June 13, 2022
-## Updated: August 30, 2023
+## Updated: December 12, 2023
 ## Author(s): Todd Lenz, tlenz001@ucr.edu
 ## ChIPPy: A complete pipeline for ChIP-seq data analysis and plotting.
 

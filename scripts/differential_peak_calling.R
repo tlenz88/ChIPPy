@@ -1,14 +1,16 @@
 #!/usr/bin/env Rscript
 
 # Created: June 19, 2022
-# Updated: August 31, 2023
+# Updated: December 12, 2023
 # Author(s): Todd Lenz, tlenz001@ucr.edu
 # Performs differential peak calling via DiffBind.
 
-library(BiocParallel)
-library(DiffBind)
-library(tidyverse)
-library(RColorBrewer)
+suppressPackageStartupMessages({
+  library(BiocParallel)
+  library(DiffBind)
+  library(tidyverse)
+  library(RColorBrewer)
+})
 
 args <- commandArgs(trailingOnly = TRUE)
 

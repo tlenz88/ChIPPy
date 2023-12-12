@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Created: August 25, 2023
-## Updated: August 31, 2023
+## Updated: December 12, 2023
 ## Author(s): Todd Lenz, tlenz001@ucr.edu
 ## ChIPPeaks: Performs peak calling and differential peak calling using an input chip-seq metadata file describing samples.
 
@@ -265,11 +265,13 @@ function TSS_analysis() {
         bamControl="$(awk -F '\t' -v column="3" -v value="$value" -v prefix="$data_dir/" '$column == value {print prefix $7}' "$METADATA")"
         output_dir="$data_dir"/"$value"
         mkdir "$output_dir"
-        samtools merge -@ 18 "$output_dir"/"${value%%.*}"_target.bam $bamReads >> "$log_dir"/TSS_coverage.log 2>&1
-        samtools index -@ 18 "$output_dir"/"${value%%.*}"_target.bam >> "$log_dir"/TSS_coverage.log 2>&1
-        samtools merge -@ 18 "$output_dir"/"${value%%.*}"_control.bam $bamControl >> "$log_dir"/TSS_coverage.log 2>&1
-        samtools index -@ 18 "$output_dir"/"${value%%.*}"_control.bam >> "$log_dir"/TSS_coverage.log 2>&1
-        bamCompare -b1 "$output_dir"/"${value%%.*}"_target.bam -b2 "$output_dir"/"${value%%.*}"_control.bam --outFileName "$output_dir"/"${value%%.*}".bw --scaleFactorsMethod None --normalizeUsing RPKM --operation subtract -bs 1 --ignoreDuplicates -p 18 >> "$log_dir"/TSS_coverage.log 2>&1
+        {
+            samtools merge -@ 18 "$output_dir"/"${value%%.*}"_target.bam "$bamReads"
+            samtools index -@ 18 "$output_dir"/"${value%%.*}"_target.bam
+            samtools merge -@ 18 "$output_dir"/"${value%%.*}"_control.bam "$bamControl"
+            samtools index -@ 18 "$output_dir"/"${value%%.*}"_control.bam
+            bamCompare -b1 "$output_dir"/"${value%%.*}"_target.bam -b2 "$output_dir"/"${value%%.*}"_control.bam --outFileName "$output_dir"/"${value%%.*}".bw --scaleFactorsMethod None --normalizeUsing RPKM --operation subtract -bs 1 --ignoreDuplicates -p 18
+        } >> "$log_dir"/TSS_coverage.log 2>&1
     done
     computeMatrix reference-point -S "$data_dir"/*.bw -R "$gtf" -o "$data_dir"/TSS_coverage.matrix -b 500 -a 1500 -bs 1 -p "$THREADS" >> "$log_dir"/TSS_coverage.log 2>&1
     plotProfile -m "$data_dir"/TSS_coverage.matrix -o "$fig_dir"/TSS_coverage_profile.pdf --perGroup >> "$log_dir"/TSS_coverage.log 2>&1
