@@ -5,16 +5,18 @@
 ## Author(s): Todd Lenz, tlenz001@ucr.edu
 ## ChIPPeaks: Performs peak calling and differential peak calling using an input chip-seq metadata file describing samples.
 
-
 function help {
     echo "ChIPPeaks.sh --help"
-    echo "usage : ChIPPeaks.sh -m METADATA -c CONTROL -g GENOME [-h]"
+    echo "usage : ChIPPeaks.sh -m METADATA -c CONTROL -g GENOME [-t THREADS] [-h]"
     echo
     echo "---------------------------------------------------------------"
-    echo " Input arguments:"
+    echo " Required inputs:"
     echo "  -m|--metadata METADATA : ChIP-seq sample metadata file."
     echo "  -c|--control CONTROL   : Control condition."
     echo "  -g|--genome GENOME     : Directory containing genome files."
+    echo
+    echo " Optional inputs:"
+    echo "  -t|--threads THREADS   : Processor threads."
     echo "  -h|--help HELP         : Show help message."
     echo "---------------------------------------------------------------"
     exit 0;
@@ -29,6 +31,7 @@ for arg in "$@"; do
         "--metadata") set -- "$@" "-m" ;;
         "--control") set -- "$@" "-c" ;;
         "--genome") set -- "$@" "-g" ;;
+        "--threads") set -- "$@" "-t" ;;
         "--help") set -- "$@" "-h" ;;
         *) set -- "$@" "$arg"
     esac
@@ -37,18 +40,38 @@ done
 pipedir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 SCRIPTS="$pipedir"/scripts
 
-while getopts ":m:c:g:h:" opt; do
+while getopts ":m:c:g:t:h:" opt; do
     case $opt in
         m) METADATA="$OPTARG";;
         c) CONTROL="$OPTARG";;
         g) GENOME="$OPTARG";;
+        t) THREADS="$OPTARG";;
         h) help;;
         *) echo "Error: '$OPTARG' is an invalid argument."
     esac
 done
 
+
+############################
+## Check input arguments. ##
+############################
 if [[ -z "$METADATA" ]]; then
     echo "Error: Script must be run with a metadata file."
+    exit 1
+elif [[ ! -e "$METADATA" ]]; then
+    echo "Error: Metadata file not found."
+    exit 1
+elif [[ -z "$GENOME" ]]; then
+    echo "Error: Genome argument required."
+    exit 1
+elif [[ ! -e "$GENOME" ]]; then
+    echo "Error: Genome folder not found."
+    exit 1
+elif [[ -n "$THREADS" && "$THREADS" -gt $(nproc) ]]; then
+    echo "Error: Invalid value for threads argument."
+    exit 1
+elif [[ -n "$THREADS" && ! "$THREADS" =~ ^[0-9]+$ ]]; then
+    echo "Error: Invalid value for threads argument."
     exit 1
 fi
 
@@ -71,6 +94,7 @@ if [[ ! -e "$data_dir"/logs ]]; then
 else
     log_dir="$data_dir"/logs
 fi
+
 
 ######################################################
 ## Check Python installation and required packages. ##
@@ -113,6 +137,14 @@ if ! command -v macs2 &> /dev/null; then
 fi
 
 
+#################################################
+## Define number of processing threads to use. ##
+#################################################
+if [[ -z $THREADS ]]; then
+    THREADS=$(($(nproc) / 2))
+fi
+
+
 #######################################
 ## Check for necessary genome files. ##
 #######################################
@@ -121,7 +153,6 @@ function get_chrom_sizes() {
     chrom_sizes=$(find -L "$1" -mindepth 1 -maxdepth 1 \( -name "*.chrom.sizes" \))
     bname="${fa%%.*}"
     if [[ -e "$bname.chrom.sizes"  ]]; then
-        echo "'.chrom.sizes' file found."
         gsize="$(awk -F '\t' '{ sum += $2 } END { print sum }' "$chrom_sizes")"
     elif [[ $fa = "" && ! -e "$bname.chrom.sizes"  ]]; then
         echo "Error: No FASTA or '.chrom.sizes' file found."
@@ -131,14 +162,28 @@ function get_chrom_sizes() {
         python3 "$SCRIPTS"/create_sizes.py "$fa"
         gsize="$(awk -F '\t' '{ sum += $2 } END { print sum }' "$chrom_sizes")"
     fi
-    echo
+}
+
+function get_gtf_file() {
+    fa=$(find -L "$1" -mindepth 1 -maxdepth 1 \( -name "*.fasta" -o -name "*.fa" \))
+    bname="${fa%%.*}"
+    gtf="$bname".gtf
+    if [[ $fa = "" && ! -e "$bname.gtf"  ]]; then
+        echo "Error: No FASTA or GTF file found."
+        exit 1
+    elif [[ $fa != "" && ! -e "$bname.gtf" ]]; then
+        echo "No GTF file found."
+        exit 1
+    fi
 }
 
 if [[ -z $GENOME ]]; then
     get_chrom_sizes "$pipedir"/genomes
+    get_gtf_file "$pipedir"/genomes
 else
     genome_dir="$(readlink -f "$GENOME")"
     get_chrom_sizes "$genome_dir"
+    get_gtf_file "$genome_dir"
 fi
 
 
@@ -162,44 +207,80 @@ function check_alg_type() {
     fi
 }
 
-echo "Performing peak calling."
-while IFS= read -r line; do
-    SampleID="$(echo "$line" | awk -F '\t' '{print $1}')"
-    echo "$SampleID"
-    bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
-    bamReads="$data_dir/${bamReads#"$data_dir"}"
-    bamControl="$(echo "$line" | awk -F '\t' '{print $7}')"
-    bamControl="$data_dir/${bamControl#"$data_dir"}"
-    bam_format="$(check_bam_type "$bamReads")"
-    outdir="$(dirname "$bamReads")"
-    alg="$(check_alg_type "$line")"
-    macs2 callpeak -t "$bamReads" -c "$bamControl" -f "$bam_format" -g "$gsize" -n "$SampleID" -q 0.05 --outdir "$outdir" -B "$alg" >> "$log_dir"/peak_calling.log 2>&1
-done < <(tail -n +2 "$METADATA")
-echo
-
-while IFS= read -r line; do
-    if [[ "$(echo "$line" | awk -F'\t' '{print NF}')" -eq 7 ]]; then
-        if [[ "$(echo "$line" | awk -F '\t' '{print $1}')" = "SampleID" ]]; then
-            echo -e "$line\tPeaks\tPeakCaller"
+function peak_calling() {
+    echo "Performing peak calling."
+    while IFS= read -r line; do
+        SampleID="$(echo "$line" | awk -F '\t' '{print $1}')"
+        echo "$SampleID"
+        bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
+        bamReads="$data_dir/${bamReads#"$data_dir"}"
+        bamControl="$(echo "$line" | awk -F '\t' '{print $7}')"
+        bamControl="$data_dir/${bamControl#"$data_dir"}"
+        bam_format="$(check_bam_type "$bamReads")"
+        outdir="$(dirname "$bamReads")"
+        alg="$(check_alg_type "$line")"
+        macs2 callpeak -t "$bamReads" -c "$bamControl" -f "$bam_format" -g "$gsize" -n "$SampleID" -q 0.05 --outdir "$outdir" -B "$alg" >> "$log_dir"/peak_calling.log 2>&1
+    done < <(tail -n +2 "$METADATA")
+    while IFS= read -r line; do
+        if [[ "$(echo "$line" | awk -F'\t' '{print NF}')" -eq 7 ]]; then
+            if [[ "$(echo "$line" | awk -F '\t' '{print $1}')" = "SampleID" ]]; then
+                echo -e "$line\tPeaks\tPeakCaller"
+            else
+                bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
+                echo -e "$line\t${bamReads%_*}_peaks.xls\tmacs"
+            fi
         else
-            bamReads="$(echo "$line" | awk -F '\t' '{print $5}')"
-            echo -e "$line\t${bamReads%_*}_peaks.xls\tmacs"
+            echo "$line"
         fi
-    else
-        echo "$line"
-    fi
-done < "$METADATA" > "${METADATA%.*}_updated.txt"
-mv "${METADATA%.*}_updated.txt" "$METADATA"
+    done < "$METADATA" > "${METADATA%.*}_updated.txt"
+    mv "${METADATA%.*}_updated.txt" "$METADATA"
+    echo
+}
 
 
 ####################################
 ## Run differential peak calling. ##
 ####################################
-if [[ -z "$CONTROL" ]]; then
-    echo "Warning: No control argument entered. Differential peak calling step can not be performed."
-elif [[ $(awk '{ print $3 }' < "$METADATA" | grep -c "$CONTROL") -eq 0 ]]; then
-    echo "Warning: Control argument not found in metadata. Differential peak calling step can not be performed."
-else
-    echo "Finding differential peaks."
-    Rscript "$SCRIPTS"/differential_peak_calling.R "$(dirname "$METADATA")" "$(basename "$METADATA")" "$CONTROL" >> "$log_dir"/diff_peak_calling.log 2>&1
-fi
+function diff_peak_calling() {
+    if [[ -z "$CONTROL" ]]; then
+        echo "Warning: No control argument entered. Differential peak calling step can not be performed."
+    elif [[ $(awk '{ print $3 }' < "$METADATA" | grep -c "$CONTROL") -eq 0 ]]; then
+        echo "Warning: Control argument not found in metadata. Differential peak calling step can not be performed."
+    else
+        echo "Finding differential peaks."
+        Rscript "$SCRIPTS"/differential_peak_calling.R -o "$data_dir" -m "$(basename "$METADATA")" -c "$CONTROL" >> "$log_dir"/diff_peak_calling.log 2>&1
+    fi
+}
+
+
+#####################################################
+## Run transcription start site coverage analysis. ##
+#####################################################
+function TSS_analysis() {
+    echo "Performing TSS analysis."
+    echo "----------------------------------------------------------------"
+    unique_values=$(awk -F '\t' -v column="3" 'NR > 1 {print $column}' "$METADATA" | sort -u)
+    for value in $unique_values; do
+        bamReads="$(awk -F '\t' -v column="3" -v value="$value" -v prefix="$data_dir/" '$column == value {print prefix $5}' "$METADATA")"
+        bamControl="$(awk -F '\t' -v column="3" -v value="$value" -v prefix="$data_dir/" '$column == value {print prefix $7}' "$METADATA")"
+        output_dir="$data_dir"/"$value"
+        mkdir "$output_dir"
+        samtools merge -@ 18 "$output_dir"/"${value%%.*}"_target.bam $bamReads >> "$log_dir"/TSS_coverage.log 2>&1
+        samtools index -@ 18 "$output_dir"/"${value%%.*}"_target.bam >> "$log_dir"/TSS_coverage.log 2>&1
+        samtools merge -@ 18 "$output_dir"/"${value%%.*}"_control.bam $bamControl >> "$log_dir"/TSS_coverage.log 2>&1
+        samtools index -@ 18 "$output_dir"/"${value%%.*}"_control.bam >> "$log_dir"/TSS_coverage.log 2>&1
+        bamCompare -b1 "$output_dir"/"${value%%.*}"_target.bam -b2 "$output_dir"/"${value%%.*}"_control.bam --outFileName "$output_dir"/"${value%%.*}".bw --scaleFactorsMethod None --normalizeUsing RPKM --operation subtract -bs 1 --ignoreDuplicates -p 18 >> "$log_dir"/TSS_coverage.log 2>&1
+    done
+    computeMatrix reference-point -S "$data_dir"/*.bw -R "$gtf" -o "$data_dir"/TSS_coverage.matrix -b 500 -a 1500 -bs 1 -p "$THREADS" >> "$log_dir"/TSS_coverage.log 2>&1
+    plotProfile -m "$data_dir"/TSS_coverage.matrix -o "$fig_dir"/TSS_coverage_profile.pdf --perGroup >> "$log_dir"/TSS_coverage.log 2>&1
+    echo
+}
+
+
+###################
+## Run pipeline. ##
+###################
+STEPS=("peak_calling" "diff_peak_calling" "TSS_analysis")
+for s in "${STEPS[@]}"; do
+    "$s"
+done

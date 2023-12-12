@@ -23,7 +23,7 @@ Put all input files in a single directory with one folder per sample. The sequen
 
 ## What tools do I need?
 
-Although ChIPPy automatically downloads most of the necessary software/tools, depending on the system environment the user may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
+Although ChIPPy automatically downloads most of the necessary software/tools, depending on the system environment users may need to install some things manually. The only software that requires manual installation is [**Trimmomatic**](http://www.usadellab.org/cms/?page=trimmomatic) due to compatibility issues with the java version specified in the Trimmomatic build.xml file. Here is a list of all the necessary tools to run the complete pipeline:
 
 - [Python3](https://www.python.org/downloads/)
 - [pip](https://pip.pypa.io/en/stable/installation/)
@@ -47,9 +47,9 @@ To make installation of ChIPPy dependencies easier, users can create a conda env
 
 Any genome can be used if a properly formatted FASTA file is provided. Any additional files, such as bowtie2 indexes, will be created automatically if not already present.
 
-The user may want to download [IGV](https://igv.org/) because a WIG file will be generated for easier visualization in the IGV genome browser.
+Users may want to download [IGV](https://igv.org/) because a WIG file will be generated for easier visualization in the IGV genome browser.
 
-Additional scripts used to automate plotting are available to the user in the ```utils``` folder if a different pipeline or tools were used to perform ChIP-seq analysis.
+Additional scripts used to automate plotting are available to users in the ```scripts``` folder if a different pipeline or tools were used to perform ChIP-seq analysis.
 
 ## How do I run ChIPPy?
 
@@ -97,7 +97,7 @@ The following is a more detailed description of input arguments:
 
     --quality [-q]: Integer indicating Phred quality score for trimming low-quality bases at the ends of reads during read pairing and for removing low-quality reads during filtering. Phred score will also be used to approximate filtering settings during alignment.
 
-    --threads [-t]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on the users system.
+    --threads [-t]: Integer indicating number of processor threads to use for tools that allow multithreading. If no value is given, the number of available threads will be determined automatically and will use half of available threads on the user's system.
 
     --remove [-r]: Removes intermediate files when no longer needed by pipeline to save hard drive space.
 
@@ -142,7 +142,7 @@ The DiffBind R package is used for differential peak calling analysis. The metad
 
 ## How should I set up the metadata?
 
-The metadata file should contain a minimum of 7 columns used to describe the format of the user's ChIP-seq experiment, including sample names, relationships between samples, replicate numbers, and file paths. Although it isn't required for the metadata to be formatted exactly as shown in the ```example_metadata.txt``` file, it's recommended that any additional columns be added at the end (to the right) of the existing columns. The 'Condition' column is used for differential peak calling.
+The metadata file should contain a minimum of 7 columns used to describe the format of the user's ChIP-seq experiment, including sample names, relationships between samples, replicate numbers, and file paths. Although it isn't required for the metadata to be formatted exactly as shown in the ```example_metadata.txt``` file, it's recommended that any additional columns be added at the end (to the right) of the existing columns. The 'Condition' column is used to group samples for differential peak calling. File paths should be relative to the metadata file path.
 
 The following are brief descriptions of the template columns:
 
@@ -154,27 +154,30 @@ The following are brief descriptions of the template columns:
 
     --Replicate: Integer indicating replicate number.
 
-    --bamReads: Path to coordinate sorted BAM files for target samples.
+    --bamReads: Relative path to coordinate sorted BAM files for target samples.
 
-    --ControlID: Short strings unique to each control sample.
+    --ControlID: Short string unique to each control sample.
 
-    --bamControl: Path to coordinate sorted BAM files for control samples.
+    --bamControl: Relative path to coordinate sorted BAM files for control samples.
 
 ## ChIPPeaks.sh
 
 Brief description of input arguments via help message:
 
 ```
-    ChIPPeaks.sh --help
-    Usage: ChIPPeaks.sh -m METADATA -c CONTROL -g GENOME [-h]
+    "ChIPPeaks.sh --help"
+    "usage : ChIPPeaks.sh -m METADATA -c CONTROL -g GENOME [-t THREADS] [-h]"
 
-    --------------------------------------------------------------
-     Input arguments:
-      -m|--metadata METADATA : ChIP-seq sample metadata file.
-      -c|--control CONTROL   : Control 'Condition'.
-      -g|--genome GENOME     : Directory containing genome files.
-      -h|--help HELP         : Show help message.
-    --------------------------------------------------------------
+    "---------------------------------------------------------------"
+    " Required inputs:"
+    "  -m|--metadata METADATA : ChIP-seq sample metadata file."
+    "  -c|--control CONTROL   : Control condition."
+    "  -g|--genome GENOME     : Directory containing genome files."
+
+    " Optional inputs:"
+    "  -t|--threads THREADS   : Processor threads."
+    "  -h|--help HELP         : Show help message."
+    "---------------------------------------------------------------"
 ```
 
 The following is a more detailed description of input arguments:
@@ -183,6 +186,6 @@ The following is a more detailed description of input arguments:
 
     --metadata [-m]: Path to the tab-delimited text file containing ChIP-seq experiment metadata. Columns of metadata file should have at least seven columns: SampleID, Factor, Condition, Replicate, bamReads, ControlID and bamControl. The metadata file will be automatically modified to include two additional columns--Peaks and PeakCaller--after peak calling. Use the ```example_metadata.txt``` file in the ```examples``` directory as a template. See the [DiffBind vignette](https://bioconductor.org/packages/release/bioc/vignettes/DiffBind/inst/doc/DiffBind.pdf) and the following section of this README for more information on setting up the metadata file.
 
-    --control[-c]: Sting indicating the control samples in the experiment. This string should be under the 'Condition' column in the metadata file.
+    --control[-c]: String indicating the control samples in the experiment. This string should be under the 'Condition' column in the metadata file.
 
     --genome [-g]: Directory containing genome files for the organism of interest. A FASTA file should be present in the directory so that any additional required genome files can be automatically created if missing. All genome files should have the same basename.

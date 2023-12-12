@@ -94,10 +94,11 @@ def parse_args(args):
     parser.add_argument('-y',
                         '--ymax',
                         dest='ymax',
-                        help='Set equal maximum y-value for all chromosomes.',
+                        help='Set the maximum y-value for all chromosomes.',
                         required=False,
                         action='store_false',
-                        default=None)
+                        default=None,
+                        type=int)
     return parser.parse_args()
 
 
@@ -134,7 +135,9 @@ def input_params(args):
     if args.normalize:
         df = normalize_df(df, args.normalize)
     res = int(args.resolution)
-    return genes, centromeres, df, out, samples, res
+    if args.ymax:
+        max_yval = int(args.resolution)
+    return genes, centromeres, df, out, samples, res, max_yval
 
 
 def filter_gff(gff):
@@ -236,7 +239,7 @@ def annotate_genes(ax, genes, res, max_yval):
     for g in genes.itertuples():
         ax.arrow(g[2] // res + 1, -max_yval * .2, (g[3]-g[2]) // res + 1, 
                  0, width=max_yval/4, head_width=0, head_length=0, 
-                 facecolor='#0000FF', edgecolor='#0000FF', 
+                 facecolor='#FF0000', edgecolor='#FF0000', 
                  length_includes_head=True, clip_on=False)
     return ax
 
@@ -253,17 +256,16 @@ def annotate_centromeres(ax, centromeres, res, max_yval):
 
 def main():
     args = parse_args(sys.argv[1:])
-    genes, centromeres, df, out, samples, res = input_params(args)
-    df = data_binning(df, res)
-    if args.ymax is not None:
-        max_yval = df[list(df.columns)[2:]].max().max()
+    genes, centromeres, df, out, samples, res, max_yval = input_params(args)
     max_xval = max(df[0].value_counts())
+    df = data_binning(df, res)
     pdf = PdfPages(out)
     num_plots = len(df[0].unique())*(len(samples)+1)
     plot_range = [*range(num_plots)]
     plot_idx = 0
+    sample_colors = ['#F75D53', '#5D53F7', '#53F75D'] #Deitsch_collab
     #sample_colors = ['#D81B60', '#1E88E5', '#FFC107']
-    sample_colors = ['#1E88E5', '#808080', '#D3D3D3']
+    #sample_colors = ['#1E88E5', '#808080', '#D3D3D3']
     fig = plt.figure()
     fig.set_figheight(num_plots)
     fig.set_figwidth(20)

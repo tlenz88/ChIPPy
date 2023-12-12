@@ -17,7 +17,6 @@ def assign_args(args):
 			genes.columns = range(genes.columns.size)
 			genes.reset_index(drop=True, inplace=True)
 			genes[11] = genes[11].str.replace(r'%2C', ',', regex=True)
-			genes[11] = genes[11].str.replace(r'+', ' ', regex=True)
 			genes.sort_values([0,3], ascending=True, inplace=True)
 			genes.reset_index(drop=True, inplace=True)
 		elif os.path.splitext(i)[1] == ".narrowPeak" or os.path.splitext(i)[1] == ".broadPeak":
@@ -28,14 +27,19 @@ def assign_args(args):
 			outfile = "".join([os.path.splitext(os.path.basename(i))[0], "_mapped.txt"])
 		elif os.path.splitext(i)[1] == ".bed" or os.path.splitext(i)[1] == ".txt":
 			peaks = pd.read_csv(i, sep='\t')
-			peaks.columns = range(len(peaks.columns))
-			peaks.sort_values([0, 1], ascending=True, inplace=True)
+			peaks.sort_values(['chr', 'start'], ascending=True, inplace=True)
+			peaks.reset_index(drop=True, inplace=True)
+			outdir = os.path.dirname(os.path.abspath(i))
+			outfile = "".join([os.path.splitext(os.path.basename(i))[0], "_mapped.txt"])
+		elif os.path.splitext(i)[1] == ".xlsx":
+			peaks = pd.read_excel(i)
+			peaks.sort_values(['chr', 'start'], ascending=True, inplace=True)
 			peaks.reset_index(drop=True, inplace=True)
 			outdir = os.path.dirname(os.path.abspath(i))
 			outfile = "".join([os.path.splitext(os.path.basename(i))[0], "_mapped.txt"])
 		else:
 			print()
-			print("".join(["Input file ", i, " is not a recognized input format."]))
+			print("".join(["Input file ", i, " is not a recognized input."]))
 			print("Run script with standard GFF and narrowPeak/broadPeak files.")
 			print()
 			sys.exit(0)
@@ -60,8 +64,8 @@ def check_overlaps(sp, sg):
 def main():
 	genes, peaks, outdir, outfile = assign_args(sys.argv[1:])
 	gene_peaks = []
-	for chrom in peaks[0].unique():
-		sub_peaks = peaks[peaks[0] == chrom].copy()
+	for chrom in peaks['chr'].unique():
+		sub_peaks = peaks[peaks['chr'] == chrom].copy()
 		sub_genes = genes[genes[0] == chrom].copy()
 		for sp in sub_peaks.itertuples():
 			sg = sub_genes[(sub_genes[3] - 1000 < (sp[3] - sp[2]) / 2 + sp[2]) & (sub_genes[4] > (sp[3] - sp[2]) / 2 + sp[2])].copy()

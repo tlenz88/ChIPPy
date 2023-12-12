@@ -299,8 +299,6 @@ def create_arrow(ax, exons, strand, res, max_yval, dist):
 def main():
     args = parse_args(sys.argv[1:])
     genes, exons, df, out, samples, res, dist = input_params(args)
-    print(genes)
-    exit(1)
     df = extract_gene_regions(df, genes, dist)
     df = data_binning(df, res)
     max_yval = df[list(df.columns)[4:]].max().max()
@@ -312,7 +310,7 @@ def main():
         fig = plt.figure()
         fig.set_figheight(len(samples))
         fig.set_figwidth(20)
-        sample_colors = ['#00bfc4', '#f8766d'] #'#f8766d', '#00bfc4' # '#D81B60', '#1E88E5', '#FFC107'
+        sample_colors = ['#F3766E', '#1CBDC2']
         for i in [*range(len(samples))]:
             ax = plt.subplot2grid((len(samples)+1, 20), (i, 0), 
                                   colspan=int(math.ceil(max(gene_df[3]) / 

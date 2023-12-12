@@ -44,9 +44,7 @@ for arg in "$@"; do
         "--output") set -- "$@" "-o" ;;
         "--step") set -- "$@" "-s" ;;
         "--quality") set -- "$@" "-q" ;;
-        "--treatment") set -- "$@" "-t" ;;
-        "--control") set -- "$@" "-c" ;;
-        "--threads") set -- "$@" "-p" ;;
+        "--threads") set -- "$@" "-t" ;;
         "--remove") set -- "$@" "-r" ;;
         "--help") set -- "$@" "-h" ;;
         *) set -- "$@" "$arg"
