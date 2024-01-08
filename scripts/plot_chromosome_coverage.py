@@ -19,6 +19,7 @@ import re
 import argparse
 import pandas as pd
 import numpy as np
+import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -67,7 +68,7 @@ def parse_args(args):
                         required=False,
                         default=10000,
                         type=int)
-    parser.add_argument('-c',
+    parser.add_argument('-m',
                         '--centromeres',
                         dest='centromeres',
                         help='List of centromere coordinates.',
@@ -98,6 +99,13 @@ def parse_args(args):
                         required=False,
                         default=None,
                         type=int)
+    parser.add_argument('-c',
+                        '--colors',
+                        dest='colors',
+                        help='List of colors to use for each sample.',
+                        nargs='+',
+                        required=False,
+                        default=None)
     return parser.parse_args()
 
 
@@ -123,7 +131,7 @@ def input_params(args):
         except:
             df = bed
             if not args.output:
-                out = ''.join([os.path.dirname(i), '/ChIP_barplot.pdf'])
+                out = ''.join([os.path.dirname(os.path.abspath(i)), '/ChIP_barplot.pdf'])
             else:
                 out = args.output
         if not args.samples or len(args.samples) != len(args.bed):
@@ -133,10 +141,12 @@ def input_params(args):
         samples = args.samples
     if args.normalize:
         df = normalize_df(df, args.normalize)
+    if args.colors:
+        sample_colors = args.colors
+    else:
+        sample_colors = sns.color_palette('colorblind', n_colors = len(args.bed))
     res = int(args.resolution)
-    if args.ymax:
-        max_yval = int(args.ymax)
-    return genes, centromeres, df, out, samples, res, max_yval
+    return genes, centromeres, df, out, samples, res, sample_colors
 
 
 def filter_gff(gff):
@@ -255,14 +265,16 @@ def annotate_centromeres(ax, centromeres, res, max_yval):
 
 def main():
     args = parse_args(sys.argv[1:])
-    genes, centromeres, df, out, samples, res, max_yval = input_params(args)
+    genes, centromeres, df, out, samples, res, sample_colors = input_params(args)
     df = data_binning(df, res)
+    if args.ymax:
+        max_yval = df[list(df.columns)[2:]].max().max()
     max_xval = max(df[0].value_counts())
     pdf = PdfPages(out)
     num_plots = len(df[0].unique())*(len(samples)+1)
     plot_range = [*range(num_plots)]
     plot_idx = 0
-    sample_colors = ['#F75D53', '#5D53F7', '#53F75D'] #Deitsch_collab
+    #sample_colors = ['#F75D53', '#5D53F7', '#53F75D']
     #sample_colors = ['#D81B60', '#1E88E5', '#FFC107']
     #sample_colors = ['#1E88E5', '#808080', '#D3D3D3']
     fig = plt.figure()

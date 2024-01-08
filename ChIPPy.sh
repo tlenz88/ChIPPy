@@ -96,33 +96,22 @@ fi
 ####################
 ## Define output. ##
 ####################
-if [[ -e "$OUTPUT" && -z "$STEP" ]]; then
+if [[ -z "$OUTPUT" ]]; then
+    echo "No output folder selected. Files will be saved to parent directory of input."
+    OUTPUT="$(dirname "$INPUT")"/output_files
+fi
+if [[ -e "$OUTPUT" && "$OUTPUT" != "$INPUT" ]]; then
     echo "$OUTPUT folder alreads exists. Do you want to overwrite it? (y/n)"
     read -r ans
     if [[ "$ans" = "y" ]]; then
         rm -rf "$OUTPUT"
         mkdir "$OUTPUT"
-        mkdir "$OUTPUT"/output_files
-        OUTPUT="$OUTPUT"/output_files
         for i in "$INPUT"/*; do
             mkdir "$OUTPUT"/"$(basename "$i")"
         done
     fi
-elif [[ -e "$OUTPUT" && -n "$STEP" ]]; then
-    OUTPUT="$OUTPUT"/output_files
-elif [[ -n "$OUTPUT" && -z "$STEP" ]]; then
+elif [[ ! -e "$OUTPUT" ]]; then
     mkdir "$OUTPUT"
-    mkdir "$OUTPUT"/output_files
-    OUTPUT="$OUTPUT"/output_files
-    for i in "$INPUT"/*; do
-        mkdir "$OUTPUT"/"$(basename "$i")"
-    done
-elif [[ -n "$OUTPUT" && -n "$STEP" ]]; then
-    OUTPUT="$OUTPUT"/output_files
-elif [[ -z "$OUTPUT" ]]; then
-    echo "No output folder selected. Files will be saved to input directory."
-    mkdir "$INPUT"/output_files
-    OUTPUT="$INPUT"/output_files
     for i in "$INPUT"/*; do
         mkdir "$OUTPUT"/"$(basename "$i")"
     done
